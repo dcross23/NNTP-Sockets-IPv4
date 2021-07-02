@@ -1,16 +1,3 @@
-/*
- *			C L I E N T C P
- *
- *	This is an example program that demonstrates the use of
- *	stream sockets as an IPC mechanism.  This contains the client,
- *	and is intended to operate in conjunction with the server
- *	program.  Together, these two programs
- *	demonstrate many of the features of sockets, as well as good
- *	conventions for using these features.
- *
- *
- */
- 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -22,8 +9,7 @@
 #include <string.h>
 #include <time.h>
 
-#define PUERTO 17278
-#define TAM_BUFFER 10
+#include "../params.h"
 
 /*
  *			M A I N
@@ -37,9 +23,7 @@
  *	The name of the system to which the requests will be sent is given
  *	as a parameter to the command.
  */
-int main(argc, argv)
-int argc;
-char *argv[];
+int main(int argc, char** argv)
 {
 	int s;				/* connected socket descriptor */
 	struct addrinfo hints, *res;
@@ -47,7 +31,7 @@ char *argv[];
 	struct sockaddr_in myaddr_in;	/* for local socket address */
 	struct sockaddr_in servaddr_in;	/* for server socket address */
 	int addrlen, i, j, errcode;
-	char buf[TAM_BUFFER];		/* This example uses TAM_BUFFER byte messages. */
+	char buf[BUFFER_SIZE];		/* This example uses BUFFER_SIZE byte messages. */
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage:  %s <remote host>\n", argv[0]);
@@ -91,8 +75,8 @@ char *argv[];
 	
 	freeaddrinfo(res);
 
-    /* puerto del servidor en orden de red*/
-	servaddr_in.sin_port = htons(PUERTO);
+    /* PORT del servidor en orden de red*/
+	servaddr_in.sin_port = htons(PORT);
 
 		/* Try to connect to the remote server at the address
 		 * which was just built into peeraddr.
@@ -130,7 +114,7 @@ char *argv[];
 
 	for (i=1; i<=5; i++) {
 		*buf = i;
-		if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
+		if (send(s, buf, BUFFER_SIZE, 0) != BUFFER_SIZE) {
 			fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
 			fprintf(stderr, "on send number %d\n", i);
 			exit(1);
@@ -155,7 +139,7 @@ char *argv[];
 		 * after the server has sent all of its replies, and closed
 		 * its end of the connection.
 		 */
-	while (i = recv(s, buf, TAM_BUFFER, 0)) {
+	while (i = recv(s, buf, BUFFER_SIZE, 0)) {
 		if (i == -1) {
             		perror(argv[0]);
 			fprintf(stderr, "%s: error reading result\n", argv[0]);
@@ -163,20 +147,20 @@ char *argv[];
 		}
 			/* The reason this while loop exists is that there
 			 * is a remote possibility of the above recv returning
-			 * less than TAM_BUFFER bytes.  This is because a recv returns
+			 * less than BUFFER_SIZE bytes.  This is because a recv returns
 			 * as soon as there is some data, and will not wait for
-			 * all of the requested data to arrive.  Since TAM_BUFFER bytes
+			 * all of the requested data to arrive.  Since BUFFER_SIZE bytes
 			 * is relatively small compared to the allowed TCP
 			 * packet sizes, a partial receive is unlikely.  If
 			 * this example had used 2048 bytes requests instead,
 			 * a partial receive would be far more likely.
-			 * This loop will keep receiving until all TAM_BUFFER bytes
+			 * This loop will keep receiving until all BUFFER_SIZE bytes
 			 * have been received, thus guaranteeing that the
 			 * next recv at the top of the loop will start at
 			 * the begining of the next reply.
 			 */
-		while (i < TAM_BUFFER) {
-			j = recv(s, &buf[i], TAM_BUFFER-i, 0);
+		while (i < BUFFER_SIZE) {
+			j = recv(s, &buf[i], BUFFER_SIZE-i, 0);
 			if (j == -1) {
                      		perror(argv[0]);
 				fprintf(stderr, "%s: error reading result\n", argv[0]);

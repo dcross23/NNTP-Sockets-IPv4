@@ -1,21 +1,3 @@
-/*
- *			C L I E N T U D P
- *
- *	This is an example program that demonstrates the use of
- *	sockets as an IPC mechanism.  This contains the client,
- *	and is intended to operate in conjunction with the server
- *	program.  Together, these two programs
- *	demonstrate many of the features of sockets, as well as good
- *	conventions for using these features.
- *
- *
- *	This program will request the internet address of a target
- *	host by name from the serving host.  The serving host
- *	will return the requested internet address as a response,
- *	and will return an address of all ones if it does not recognize
- *	the host name.
- *
- */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/errno.h>
@@ -29,14 +11,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "../params.h"
+
+#define MAXHOST 512
+
 extern int errno;
 
-#define ADDRNOTFOUND	0xffffffff	/* value returned for unknown host */
-#define RETRIES	5		/* number of times to retry before givin up */
-#define BUFFERSIZE	1024	/* maximum size of packets to be received */
-#define PUERTO 17278
-#define TIMEOUT 6
-#define MAXHOST 512
+
 /*
  *			H A N D L E R
  *
@@ -61,9 +42,7 @@ void handler()
  *	be the the name of the target host for which the internet address
  *	is sought.
  */
-int main(argc, argv)
-int argc;
-char *argv[];
+int main(int argc, char** argv)
 {
 	int i, errcode;
 	int retry = RETRIES;		/* holds the retry count */
@@ -157,8 +136,8 @@ char *argv[];
 
 	freeaddrinfo(res);
 	
-	/* puerto del servidor en orden de red*/
-	servaddr_in.sin_port = htons(PUERTO);
+	/* PORT del servidor en orden de red*/
+	servaddr_in.sin_port = htons(PORT);
 
 
    	/* Registrar SIGALRM para no quedar bloqueados en los recvfrom */
@@ -171,8 +150,46 @@ char *argv[];
 	}
 	
 	
+	/* Send a "false conexion" message to the UDP server listening socket (ls_UDP) */
+	if (sendto (s, " ", 1,0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
+		perror(argv[0]);
+		fprintf(stderr, "%s: unable to send request to \"connect\" \n", argv[0]);
+		exit(1);
+	}	
+	
+	
+	/* Waits for the response of the server with the new socket it has to talk to */
+	char hola[2];
+	n_retry = RETRIES;
+	while(n_retry > 0){
+		alarm(TIMEOUT);
+		if (recvfrom (s, hola, 1, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
+			if (errno == EINTR) {
+				 /* Need to retry the request if we have
+				 * not already exceeded the retry limit.
+				 */
+	 		     fprintf(stderr,"Alarm went off.\n");
+	 		     n_retry--; 
+			} else  {
+				fprintf(stderr,"Unable to get response to \"connect\"\n");
+				exit(1); 
+			}
+		}else{
+			alarm(0);
+			break;
+		}
+	}
+	
+	if(n_retry == 0){ 
+		exit(1);
+	}
+	
+	
+	
+	
+	
+	//Mensaje	
 	n_retry=RETRIES;
-    
 	while (n_retry > 0) {
 		/* Send the request to the nameserver. */
 		if (sendto (s, argv[2], strlen(argv[2]), 0, (struct sockaddr *)&servaddr_in, sizeof(struct sockaddr_in)) == -1) {
