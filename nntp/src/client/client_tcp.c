@@ -31,7 +31,10 @@ int main(int argc, char** argv)
 	struct sockaddr_in myaddr_in;	/* for local socket address */
 	struct sockaddr_in servaddr_in;	/* for server socket address */
 	int addrlen, i, j, errcode;
-	char buf[BUFFER_SIZE];		/* This example uses BUFFER_SIZE byte messages. */
+	char command[COMMAND_SIZE];	/* This example uses COMMAND_SIZE byte messages. */
+	
+	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
+	
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage:  %s <remote host>\n", argv[0]);
@@ -108,72 +111,86 @@ int main(int argc, char** argv)
 	 * that this program could easily be ported to a host
 	 * that does require it.
 	 */
-	printf("Connected to %s on port %u at %s",
+	printf("[TCP] Connected to %s on port %u at %s",
 			argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
 
 
-	for (i=1; i<=5; i++) {
-		*buf = i;
-		if (send(s, buf, BUFFER_SIZE, 0) != BUFFER_SIZE) {
+//---------
+
+	commandsFile = fopen("../src/client/someNNTPCommands.txt", "r");
+	if(commandsFile == NULL){
+		fprintf(stderr, "Cannot read NNTP commands file\n");
+		exit(1);
+	}
+	
+	while( fgets(command, sizeof(command), commandsFile) != NULL){
+		printf("[TCP] Command Readed: %s", command);	
+		if (send(s, command, COMMAND_SIZE, 0) != COMMAND_SIZE) {
 			fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
 			fprintf(stderr, "on send number %d\n", i);
 			exit(1);
 		}
-	}
-
-		/* Now, shutdown the connection for further sends.
-		 * This will cause the server to receive an end-of-file
-		 * condition after it has received all the requests that
-		 * have just been sent, indicating that we will not be
-		 * sending any further requests.
-		 */
-	if (shutdown(s, 1) == -1) {
-		perror(argv[0]);
-		fprintf(stderr, "%s: unable to shutdown socket\n", argv[0]);
-		exit(1);
-	}
-
+		
 		/* Now, start receiving all of the replys from the server.
 		 * This loop will terminate when the recv returns zero,
 		 * which is an end-of-file condition.  This will happen
 		 * after the server has sent all of its replies, and closed
 		 * its end of the connection.
 		 */
-	while (i = recv(s, buf, BUFFER_SIZE, 0)) {
+		i = recv(s, command, COMMAND_SIZE, 0);
 		if (i == -1) {
-            		perror(argv[0]);
+	    		perror(argv[0]);
 			fprintf(stderr, "%s: error reading result\n", argv[0]);
 			exit(1);
 		}
-			/* The reason this while loop exists is that there
-			 * is a remote possibility of the above recv returning
-			 * less than BUFFER_SIZE bytes.  This is because a recv returns
-			 * as soon as there is some data, and will not wait for
-			 * all of the requested data to arrive.  Since BUFFER_SIZE bytes
-			 * is relatively small compared to the allowed TCP
-			 * packet sizes, a partial receive is unlikely.  If
-			 * this example had used 2048 bytes requests instead,
-			 * a partial receive would be far more likely.
-			 * This loop will keep receiving until all BUFFER_SIZE bytes
-			 * have been received, thus guaranteeing that the
-			 * next recv at the top of the loop will start at
-			 * the begining of the next reply.
-			 */
-		while (i < BUFFER_SIZE) {
-			j = recv(s, &buf[i], BUFFER_SIZE-i, 0);
+		/* The reason this while loop exists is that there
+		 * is a remote possibility of the above recv returning
+		 * less than COMMAND_SIZE bytes.  This is because a recv returns
+		 * as soon as there is some data, and will not wait for
+		 * all of the requested data to arrive.  Since COMMAND_SIZE bytes
+		 * is relatively small compared to the allowed TCP
+		 * this example had used 2048 bytes requests instead,
+		 * a partial receive would be far more likely.
+		 * This loop will keep receiving until all COMMAND_SIZE bytes
+		 * have been received, thus guaranteeing that the
+		 * next recv at the top of the loop will start at
+		 * the begining of the next reply.
+		 */
+		while (i < COMMAND_SIZE) {
+			j = recv(s, &command[i], COMMAND_SIZE-i, 0);
 			if (j == -1) {
-                     		perror(argv[0]);
+		     		perror(argv[0]);
 				fprintf(stderr, "%s: error reading result\n", argv[0]);
 				exit(1);
-               		}
-               		
+	       		}
+	       		
 			i += j;
 		}
-			/* Print out message indicating the identity of this reply. */
-		printf("Received result number %d\n", *buf);
+
+		/* Print out message indicating the identity of this reply. */
+		printf("[TCP] Command scanned by the server: %s\n\n", command);		
 	}
+
+	fclose(commandsFile);
+
+
+
+//---------
+	/* Now, shutdown the connection for further sends.
+	 * This will cause the server to receive an end-of-file
+	 * condition after it has received all the requests that
+	 * have just been sent, indicating that we will not be
+	 * sending any further requests.
+	 */
+	if (shutdown(s, 1) == -1) {
+		perror(argv[0]);
+		fprintf(stderr, "%s: unable to shutdown socket\n", argv[0]);
+		exit(1);
+	}
+
+
 
     /* Print message indicating completion of task. */
 	time(&timevar);
-	printf("All done at %s", (char *)ctime(&timevar));
+	printf("[TCP] All done at %s", (char *)ctime(&timevar));
 }

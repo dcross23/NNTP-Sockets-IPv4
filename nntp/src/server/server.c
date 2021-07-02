@@ -1,4 +1,5 @@
 #include "server.h"
+#include "../params.h"
 
 
 bool END_LOOP = false;          
@@ -31,7 +32,7 @@ int main(int argc, char **argv)
 	fd_set readmask;
 	int numfds,s_bigger;
 
-	char buffer[BUFFERSIZE];		/* buffer for packets to be read into */
+	char buffer[COMMAND_SIZE];		/* buffer for packets to be read into */
 
 	struct sigaction vec;
 
@@ -277,7 +278,7 @@ int main(int argc, char **argv)
 									exit(1);
 								}
 																		    						    			
-								br = recvfrom(s_UDP, buffer, BUFFERSIZE - 1, 0, (struct sockaddr *)&clientaddr_in, &addrlen);
+								br = recvfrom(s_UDP, buffer, COMMAND_SIZE - 1, 0, (struct sockaddr *)&clientaddr_in, &addrlen);
 								if ( br == -1) {
 								    perror(argv[0]);
 								    printf("%s: recvfrom error (failed false conexion UDP)\n", argv[0]);
@@ -335,17 +336,17 @@ int main(int argc, char **argv)
  */
 void serverTCP(int s, struct sockaddr_in clientaddr_in)
 {
-	int reqcnt = 0;			/* keeps count of number of requests */
-	char buf[BUFFER_SIZE];		/* This example uses BUFFER_SIZE byte messages. */
 	char hostname[MAXHOST];		/* remote host's name string */
 
 	int len, len1, status;
-	struct hostent *hp;		/* pointer to host info for remote host */
 	long timevar;			/* contains time returned by time() */
-
 	struct linger linger;		/* allow a lingering, graceful close; */
 				    	/* used when setting SO_LINGER */
-				
+			
+	int i;	
+	bool commandOK;
+	char command[COMMAND_SIZE];
+	
 				
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
@@ -373,7 +374,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("Startup from %s port %u at %s",
+	printf("[SERV] Startup from %s port %u at %s",
 		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 
 		/* Set the socket for a lingering, graceful close.
@@ -396,39 +397,120 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * how the server will know that no more requests will
 		 * follow, and the loop will be exited.
 		 */
-	while (len = recv(s, buf, BUFFER_SIZE, 0)) {
+		 
+		 
+	FILE* fd = fopen("../src/server/cRec.txt", "w");
+	
+	while (len = recv(s, command, COMMAND_SIZE, 0)) {
 		if (len == -1) errout(hostname); /* error from recv */
 			/* The reason this while loop exists is that there
 			 * is a remote possibility of the above recv returning
-			 * less than BUFFER_SIZE bytes.  This is because a recv returns
+			 * less than COMMAND_SIZE bytes.  This is because a recv returns
 			 * as soon as there is some data, and will not wait for
-			 * all of the requested data to arrive.  Since BUFFER_SIZE bytes
+			 * all of the requested data to arrive.  Since COMMAND_SIZE bytes
 			 * is relatively small compared to the allowed TCP
 			 * packet sizes, a partial receive is unlikely.  If
 			 * this example had used 2048 bytes requests instead,
 			 * a partial receive would be far more likely.
-			 * This loop will keep receiving until all BUFFER_SIZE bytes
+			 * This loop will keep receiving until all COMMAND_SIZE bytes
 			 * have been received, thus guaranteeing that the
 			 * next recv at the top of the loop will start at
 			 * the begining of the next request.
 			 */
-		while (len < BUFFER_SIZE) {
-			len1 = recv(s, &buf[len], BUFFER_SIZE-len, 0);
-			if (len1 == -1) 
-				errout(hostname);
-			
+		while (len < COMMAND_SIZE) {
+			len1 = recv(s, &command[len], COMMAND_SIZE-len, 0);
+			if (len1 == -1) errout(hostname);
 			len += len1;
 		}
-			/* Increment the request count. */
-		reqcnt++;
-			/* This sleep simulates the processing of the
-			 * request that a real server might do.
-			 */
-		sleep(1);
-			/* Send a response back to the client. */
-		if (send(s, buf, BUFFER_SIZE, 0) != BUFFER_SIZE) 
+
+
+	
+		/* Check if command has been received correctly */
+		i=0;
+		commandOK = false;
+		while(i<COMMAND_SIZE){
+			if(command[i] == '\r' && command[i+1] == '\n'){
+				/* Command is correct because it founds "\r\n", so it just 
+				* replaces that \r\n at the end of the command info by a "\0" 
+				* just to work with it as a string
+				*/
+				command[i] = '\0';
+				commandOK = true;
+				break;
+			}
+			
+			if(i == COMMAND_SIZE-2){
+				/* Command is wrong because it doesnt finish with "\r\n"
+				*/
+				commandOK = false;
+				fprintf(stderr, "Error, command received incorrectly, no \\r\\n \n");
+				errout(hostname);
+				break;
+			}
+			i++;
+		}
+		
+		/* Command is wrong, sends an error message and continues (should stop)*/
+		if(!commandOK){
+			//TODO: command is wrong, send message 
+			fprintf(stderr, "mal\n");
+			continue;
+		}
+		
+		
+		
+//--------	/* Command is ok, just works :D */
+		switch(checkCommand(command)){
+			case LIST:
+				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
+				break;
+			
+			case NEWGROUPS:
+				fprintf(fd, "%-16s -> %s\n","Comand NEWGROUPS:" , command);
+				break;
+			
+			case NEWNEWS:
+				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
+				break;
+				
+			case GROUP:
+				fprintf(fd, "%-16s -> %s\n","Comand GROUP:" , command);
+				break;
+			
+			case ARTICLE:
+				fprintf(fd, "%-16s -> %s\n","Comand ARTICLE:" , command);
+				break;
+				
+			case HEAD:
+				fprintf(fd, "%-16s -> %s\n","Comand HEAD:" , command);
+				break;
+			
+			case BODY:
+				fprintf(fd, "%-16s -> %s\n","Comand BODY:" , command);
+				break;
+			
+			case POST:
+				fprintf(fd, "%-16s -> %s\n","Comand POST:" , command);
+				break;
+							
+			case QUIT:
+				fprintf(fd, "%-16s -> %s\n","Comand QUIT:" , command);
+				break;
+				
+				
+			default:
+				fprintf(fd, "%-16s -> %s\n","Wrong command D:" , command);
+		}
+		
+
+
+		strtok(command," ");
+		/* Send a response back to the client. */
+		if (send(s, command, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 			errout(hostname);
 	}
+	
+	fclose(fd);
 
 		/* The loop has terminated, because there are no
 		 * more requests to be serviced.  As mentioned above,
@@ -450,8 +532,8 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("Completed %s port %u, %d requests, at %s\n",
-		hostname, ntohs(clientaddr_in.sin_port), reqcnt, (char *) ctime(&timevar));
+	printf("[SERV] Completed %s port %u  at %s",
+		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 }
 
 
@@ -495,7 +577,6 @@ void errout(char *hostname)
 void serverUDP(int s, char * buffer, struct sockaddr_in clientaddr_in)
 {
 	struct in_addr reqaddr;		/* for requested host's address */
-	struct hostent *hp;		/* pointer to host info for requested host */
 	int nc, errcode;
 
 	struct addrinfo hints, *res;
@@ -530,3 +611,28 @@ void serverUDP(int s, char * buffer, struct sockaddr_in clientaddr_in)
 		return;
 	}   
  }
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+/* Checks what command is */
+int checkCommand(char *command){
+	int i;
+	int maxLengthCommand;
+	GET_LONGEST_COMMAND(NCOMMANDS, maxLengthCommand)
+	char realCommand[maxLengthCommand];
+	
+	strcpy(realCommand, strtok( strdup(command), " "));	
+	for (i=0; i < NCOMMANDS; i++) {
+		Command *com = &commandTable[i];
+		if (strcmp(com->command, realCommand) == 0)
+		    return com->id;
+	}
+	
+	return WRONG_COMMAND;
+}
