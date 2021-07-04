@@ -31,8 +31,8 @@ int main(int argc, char** argv)
 	struct sockaddr_in myaddr_in;	/* for local socket address */
 	struct sockaddr_in servaddr_in;	/* for server socket address */
 	int addrlen, i, j, errcode;
-	char command[COMMAND_SIZE];	/* This example uses COMMAND_SIZE byte messages. */
 	
+	char command[COMMAND_SIZE];	/* This example uses COMMAND_SIZE byte messages. */
 	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
 	
 
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
 		}
 
 		/* Print out message indicating the identity of this reply. */
-		printf("[TCP] Command scanned by the server: %s\n\n", command);		
+		printf("[TCP] Command scanned by the server: %s\n\n", command);	
 	}
 
 	fclose(commandsFile);

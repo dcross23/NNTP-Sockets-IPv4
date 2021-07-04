@@ -16,6 +16,10 @@ run: all
 ct:
 	../bin/ct localhost
 
+.PHONY: cu
+cu:
+	../bin/cu localhost
+
 .PHONY: stop	
 stop: 
 	pkill serv
@@ -27,3 +31,4 @@ see:
 .PHONY: clean
 clean: stop
 	rm ../bin/*
+	rm server/cUDP.txt server/cTCP.txt

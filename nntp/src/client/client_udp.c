@@ -45,19 +45,20 @@ void handler()
 int main(int argc, char** argv)
 {
 	int i, errcode;
-	int retry = RETRIES;		/* holds the retry count */
 	int s;				/* socket descriptor */
 	long timevar;                   /* contains time returned by time() */
 	struct sockaddr_in myaddr_in;	/* for local socket address */
 	struct sockaddr_in servaddr_in;	/* for server socket address */
-	struct in_addr reqaddr;		/* for returned internet address */
 	int	addrlen, n_retry;
 	struct sigaction vec;
-	char hostname[MAXHOST];
 	struct addrinfo hints, *res;
+	
+	char command[COMMAND_SIZE];	/* This example uses COMMAND_SIZE byte messages. */
+	char tmp[COMMAND_SIZE];
+	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
 
-	if (argc != 3) {
-		fprintf(stderr, "Usage:  %s <nameserver> <target>\n", argv[0]);
+	if (argc != 2) {
+		fprintf(stderr, "Usage:  %s <nameserver>\n", argv[0]);
 		exit(1);
 	}
 	
@@ -107,7 +108,7 @@ int main(int argc, char** argv)
 	* that this program could easily be ported to a host
 	* that does require it.
 	*/
-    	printf("Connected to %s on port %u at %s", 
+    	printf("[UDP] \"False connected\" to %s on port %u at %s", 
     		argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
 
 	/* Set up the server address. */
@@ -150,6 +151,7 @@ int main(int argc, char** argv)
 	}
 	
 	
+	
 	/* Send a "false conexion" message to the UDP server listening socket (ls_UDP) */
 	if (sendto (s, " ", 1,0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
 		perror(argv[0]);
@@ -157,13 +159,11 @@ int main(int argc, char** argv)
 		exit(1);
 	}	
 	
-	
 	/* Waits for the response of the server with the new socket it has to talk to */
-	char hola[2];
 	n_retry = RETRIES;
 	while(n_retry > 0){
 		alarm(TIMEOUT);
-		if (recvfrom (s, hola, 1, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
+		if (recvfrom (s, tmp, 1, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
 			if (errno == EINTR) {
 				 /* Need to retry the request if we have
 				 * not already exceeded the retry limit.
@@ -186,58 +186,54 @@ int main(int argc, char** argv)
 	
 	
 	
+//---------
+	commandsFile = fopen("../src/client/someNNTPCommands.txt", "r");
+	if(commandsFile == NULL){
+		fprintf(stderr, "Cannot read NNTP commands file\n");
+		exit(1);
+	}	
 	
-	
-	//Mensaje	
-	n_retry=RETRIES;
-	while (n_retry > 0) {
-		/* Send the request to the nameserver. */
-		if (sendto (s, argv[2], strlen(argv[2]), 0, (struct sockaddr *)&servaddr_in, sizeof(struct sockaddr_in)) == -1) {
-				perror(argv[0]);
-				fprintf(stderr, "%s: unable to send request\n", argv[0]);
-				exit(1);
+	while( fgets(command, sizeof(command), commandsFile) != NULL){
+		//Sends command to server
+		if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
+			fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
+			fprintf(stderr, "on send number %d\n", i);
+			exit(1);
 		}
 		
-		/* Set up a timeout so I don't hang in case the packet
-		 * gets lost.  After all, UDP does not guarantee
-		 * delivery.
-		 */
-		alarm(TIMEOUT);
+		printf("[UDP] Command Readed: %s", command);	
 		
-		/* Wait for the reply to come in. */
-		if (recvfrom (s, &reqaddr, sizeof(struct in_addr), 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
-	    		if (errno == EINTR) {
-				/* Alarm went off and aborted the receive.
-				 * Need to retry the request if we have
-				 * not already exceeded the retry limit.
-				 */
-	 		         printf("attempt %d (retries %d).\n", n_retry, RETRIES);
-				n_retry--; 
-			} 
-		    	else{
-				printf("Unable to get response from");
-				exit(1); 
-		        }
-		} 
-		else {
-			alarm(0);
-			/* Print out response. */
-			if (reqaddr.s_addr == ADDRNOTFOUND) 
-				printf("Host %s unknown by nameserver %s\n", argv[2], argv[1]);
-			else {
-				/* inet_ntop para interoperatividad con IPv6 */
-				if (inet_ntop(AF_INET, &reqaddr, hostname, MAXHOST) == NULL)
-				   perror(" inet_ntop \n");
-				printf("Address for %s is %s\n", argv[2], hostname);
-			}
+		//Receive response from the server
+		n_retry = RETRIES;
+		while(n_retry > 0){
+			alarm(TIMEOUT);
+			if (recvfrom (s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
+				if (errno == EINTR) {
+		 		     fprintf(stderr,"Alarm went off.\n");
+		 		     n_retry--; 
+				} else  {
+					fprintf(stderr,"Unable to get response to \"connect\"\n");
+					exit(1); 
+				}
+			}else{
+				alarm(0);
+				// Print out message indicating the identity of this reply. 
+				printf("[UDP] Command scanned by the server: %s\n\n", command);	
 				
-			break;	
+				break;
+			}
 		}
-  	}
-
-
-	if (n_retry == 0) {
-		printf("Unable to get response from");
-		printf(" %s after %d attempts.\n", argv[1], RETRIES);
+		
+		if(n_retry == 0){ 
+			exit(1);
+		}
 	}
+
+	fclose(commandsFile);
+
+//---------
+
+ /* Print message indicating completion of task. */
+	time(&timevar);
+	printf("[UDP] All done at %s", (char *)ctime(&timevar));
 }

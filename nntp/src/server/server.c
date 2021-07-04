@@ -6,6 +6,12 @@ bool END_LOOP = false;
 void endProgram(){ END_LOOP = true; }
 
 
+void handler()
+{
+	printf("[SERV] Alarma recibida \n");
+}
+
+
 /*
  *			M A I N
  *
@@ -36,6 +42,16 @@ int main(int argc, char **argv)
 
 	struct sigaction vec;
 
+	
+	/* Register SIGALARM */
+	vec.sa_handler = (void *) handler;
+	vec.sa_flags = 0;
+	if ( sigaction(SIGALRM, &vec, (struct sigaction *) 0) == -1) {
+		perror(" sigaction(SIGALRM)");
+		fprintf(stderr,"%s: unable to register the SIGALRM signal\n", argv[0]);
+		exit(1);
+	}	
+	
 	
 	/* Create the listen TCP socket. */
 	ls_TCP = socket (AF_INET, SOCK_STREAM, 0);
@@ -248,7 +264,7 @@ int main(int argc, char **argv)
 						/* Clear and set up address structure for new socket. 
 						* Port 0 is specified to get any of the avaible ones, as well as the IP address.
 						*/						
-						memset ((char *)&myaddr_in, 0, sizeof(struct sockaddr_in));
+						//memset ((char *)&myaddr_in, 0, sizeof(struct sockaddr_in));
 						myaddr_in.sin_family = AF_INET;
 						myaddr_in.sin_addr.s_addr = INADDR_ANY;
 						myaddr_in.sin_port = htons(0);
@@ -267,7 +283,7 @@ int main(int argc, char **argv)
 								
 							case 0:		/* Child process comes here. */
 								/* Child doesnt need the listening socket */
-					    			//close(ls_UDP); 
+					    			close(ls_UDP); 
 					    			
 					    			/* Sends a message to the client for him to know the new port for 
 								* the false conexion
@@ -277,14 +293,9 @@ int main(int argc, char **argv)
 									fprintf(stderr, "%s: unable to send request to \"connect\" \n", argv[0]);
 									exit(1);
 								}
-																		    						    			
-								br = recvfrom(s_UDP, buffer, COMMAND_SIZE - 1, 0, (struct sockaddr *)&clientaddr_in, &addrlen);
-								if ( br == -1) {
-								    perror(argv[0]);
-								    printf("%s: recvfrom error (failed false conexion UDP)\n", argv[0]);
-								    exit(1);
-								}										    						    			
-								serverUDP(ls_UDP, buffer, clientaddr_in);
+								
+																	
+								serverUDP(s_UDP, clientaddr_in);
 								exit(0);
 							
 							default:
@@ -347,14 +358,14 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	bool commandOK;
 	char command[COMMAND_SIZE];
 	
-				
+	
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
 	 * was returned by the accept call, in the main
 	 * daemon loop above.
 	 */
 	 
-	status = getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in), hostname,MAXHOST,NULL,0,0);
+	status = getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in), hostname, MAXHOST,NULL,0,0);
 	if(status){
 		/* The information is unavailable for the remote
 			 * host.  Just format its internet address to be
@@ -374,7 +385,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("[SERV] Startup from %s port %u at %s",
+	printf("[SERV TCP] Startup from %s port %u at %s",
 		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 
 		/* Set the socket for a lingering, graceful close.
@@ -399,7 +410,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 */
 		 
 		 
-	FILE* fd = fopen("../src/server/cRec.txt", "w");
+	FILE* fd = fopen("../src/server/cTCP.txt", "w");
 	
 	while (len = recv(s, command, COMMAND_SIZE, 0)) {
 		if (len == -1) errout(hostname); /* error from recv */
@@ -532,7 +543,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("[SERV] Completed %s port %u  at %s",
+	printf("[SERV TCP] Completed %s port %u  at %s",
 		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 }
 
@@ -574,42 +585,165 @@ void errout(char *hostname)
  *	logging information to stdout.
  *
  */
-void serverUDP(int s, char * buffer, struct sockaddr_in clientaddr_in)
+void serverUDP(int s, struct sockaddr_in clientaddr_in)
 {
-	struct in_addr reqaddr;		/* for requested host's address */
-	int nc, errcode;
+	char hostname[MAXHOST];		/* remote host's name string */
 
-	struct addrinfo hints, *res;
-
-	int addrlen;
-
-	addrlen = sizeof(struct sockaddr_in);
-
-	memset (&hints, 0, sizeof (hints));
-	hints.ai_family = AF_INET;
-		
-	/* Treat the message as a string containing a hostname. */
-	/* Esta funcion es la recomendada para la compatibilidad con IPv6 gethostbyname queda obsoleta. */
-	errcode = getaddrinfo (buffer, NULL, &hints, &res); 
-	if (errcode != 0){
-		/* Name was not found.  Return a
-		 * special value signifying the error. */
-		reqaddr.s_addr = ADDRNOTFOUND;
-	}
-   	else {
-		/* Copy address of host into the return buffer. */
-		reqaddr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
-	}
-
-
-	freeaddrinfo(res);
-	nc = sendto (s, &reqaddr, sizeof(struct in_addr), 0, (struct sockaddr *)&clientaddr_in, addrlen);
+	int status, n_retry;
+	long timevar;			/* contains time returned by time() */
+	int addrlen = sizeof(struct sockaddr_in);
 	
-	if ( nc == -1) {
-		perror("serverUDP");
-		printf("%s: sendto error\n", "serverUDP");
-		return;
-	}   
+	bool finish = false;
+	
+	int i;	
+	bool commandOK;
+	char command[COMMAND_SIZE];
+
+				
+	/* Look up the host information for the remote host
+	 * that we have connected with.  Its internet address
+	 * was returned by the accept call, in the main
+	 * daemon loop above.
+	 */
+	 
+	status = getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in), hostname, MAXHOST,NULL,0,0);
+	if(status){
+		/* The information is unavailable for the remote
+			 * host.  Just format its internet address to be
+			 * printed out in the logging information.  The
+			 * address will be shown in "internet dot format".
+			 */
+		 /* inet_ntop para interoperatividad con IPv6 */
+		if (inet_ntop(AF_INET, &(clientaddr_in.sin_addr), hostname, MAXHOST) == NULL)
+			perror(" inet_ntop \n");
+	}
+	
+	time (&timevar);
+	printf("[SERV UDP] Startup from %s port %u at %s",
+		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+
+	
+	
+	FILE* fd = fopen("../src/server/cUDP.txt", "w");
+	
+	while (1) {
+		//Receives next command from the client
+		n_retry = RETRIES;
+		while(n_retry > 0){
+			alarm(TIMEOUT);
+			if (recvfrom(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, &addrlen) == -1) {
+				if (errno == EINTR) {
+		 		     fprintf(stderr,"[SERV UDP] Alarm went off.\n");
+		 		     n_retry--; 
+				} else  {
+					fprintf(stderr,"[SERV UDP] Unable to get response to \"connect\"\n");
+					exit(1); 
+				}
+			}else{
+				alarm(0);
+				break;
+			}
+		}
+		
+		if(n_retry == 0){ 
+			break;
+		}
+	
+		/* Check if command has been received correctly */
+		i=0;
+		commandOK = false;
+		while(i<COMMAND_SIZE){
+			if(command[i] == '\r' && command[i+1] == '\n'){
+				/* Command is correct because it founds "\r\n", so it just 
+				* replaces that \r\n at the end of the command info by a "\0" 
+				* just to work with it as a string
+				*/
+				command[i] = '\0';
+				commandOK = true;
+				break;
+			}
+			
+			if(i == COMMAND_SIZE-2){
+				/* Command is wrong because it doesnt finish with "\r\n"
+				*/
+				commandOK = false;
+				fprintf(stderr, "Error, command received incorrectly, no \\r\\n \n");
+				errout(hostname);
+				break;
+			}
+			i++;
+		}
+		
+		/* Command is wrong, sends an error message and continues (should stop)*/
+		if(!commandOK){
+			//TODO: command is wrong, send message 
+			fprintf(stderr, "mal\n");
+			continue;
+		}
+		
+		
+		
+//--------	/* Command is ok, just works :D */
+		switch(checkCommand(command)){
+			case LIST:
+				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
+				break;
+			
+			case NEWGROUPS:
+				fprintf(fd, "%-16s -> %s\n","Comand NEWGROUPS:" , command);
+				break;
+			
+			case NEWNEWS:
+				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
+				break;
+				
+			case GROUP:
+				fprintf(fd, "%-16s -> %s\n","Comand GROUP:" , command);
+				break;
+			
+			case ARTICLE:
+				fprintf(fd, "%-16s -> %s\n","Comand ARTICLE:" , command);
+				break;
+				
+			case HEAD:
+				fprintf(fd, "%-16s -> %s\n","Comand HEAD:" , command);
+				break;
+			
+			case BODY:
+				fprintf(fd, "%-16s -> %s\n","Comand BODY:" , command);
+				break;
+			
+			case POST:
+				fprintf(fd, "%-16s -> %s\n","Comand POST:" , command);
+				break;
+							
+			case QUIT:
+				fprintf(fd, "%-16s -> %s\n","Comand QUIT:" , command);
+				finish = true;
+				break;
+				
+				
+			default:
+				fprintf(fd, "%-16s -> %s\n","Wrong command D:" , command);
+		}
+		
+
+		strtok(command," ");
+		/* Send a response back to the client. */
+		if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+			errout(hostname);
+	
+		if(strcmp(command, "QUIT") == 0 || finish)
+			break;
+	}
+	
+	fclose(fd);		
+
+	close(s);
+	
+	time (&timevar);
+	printf("[SERV UDP] Completed %s port %u  at %s",
+		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
  }
  
  

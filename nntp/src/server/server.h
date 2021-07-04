@@ -23,7 +23,7 @@ extern int errno;
 int checkCommand(char *command);
 
 void serverTCP(int s, struct sockaddr_in peeraddr_in);
-void serverUDP(int s, char * buffer, struct sockaddr_in clientaddr_in);
+void serverUDP(int s, struct sockaddr_in clientaddr_in);
 
 void errout(char *);		/* declare error out routine */
 
