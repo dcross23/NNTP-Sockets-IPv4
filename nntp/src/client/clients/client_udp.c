@@ -1,48 +1,15 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/errno.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <netdb.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "../params.h"
-
-#define MAXHOST 512
-
-extern int errno;
+#include "client_udp.h"
 
 
-/*
- *			H A N D L E R
- *
- *	This routine is the signal handler for the alarm signal.
- */
 void handler()
 {
 	printf("Alarma recibida \n");
 }
 
-/*
- *			M A I N
- *
- *	This routine is the client which requests service from the remote
- *	"example server".  It will send a message to the remote nameserver
- *	requesting the internet address corresponding to a given hostname.
- *	The server will look up the name, and return its internet address.
- *	The returned address will be written to stdout.
- *
- *	The name of the system to which the requests will be sent is given
- *	as the first parameter to the command.  The second parameter should
- *	be the the name of the target host for which the internet address
- *	is sought.
- */
-int main(int argc, char** argv)
+
+
+
+int clientudp(char **argv)
 {
 	int i, errcode;
 	int s;				/* socket descriptor */
@@ -57,11 +24,7 @@ int main(int argc, char** argv)
 	char tmp[COMMAND_SIZE];
 	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage:  %s <nameserver>\n", argv[0]);
-		exit(1);
-	}
-	
+
 	/* Create the socket. */
 	s = socket (AF_INET, SOCK_DGRAM, 0);
 	if (s == -1) {

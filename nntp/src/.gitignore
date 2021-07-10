@@ -1,1 +1,3 @@
-commands
+server/server_commands.*
+
+client/client_commands.*

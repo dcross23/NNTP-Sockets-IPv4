@@ -3,32 +3,38 @@ CFLAGS=-g -Wunused
 
 
 .PHONY: all
-all: 
-	$(CC) $(CFLAGS) server/server.c server/server.h -o ../bin/serv
-	$(CC) $(CFLAGS) client/client_tcp.c -o ../bin/ct
-	$(CC) $(CFLAGS) client/client_udp.c -o ../bin/cu
+all:
+	cd server && make server
+	cd client && make client
+	
 
-.PHONY: run	
-run: all
-	../bin/serv
+.PHONY: server
+server: all
+	../bin/server
 
 .PHONY: ct
 ct:
-	../bin/ct localhost
+	../bin/client localhost TCP
 
 .PHONY: cu
 cu:
-	../bin/cu localhost
+	../bin/client localhost UDP
+
+
 
 .PHONY: stop	
 stop: 
-	pkill serv
+	pkill server
+
 
 .PHONY: see	
 see:
 	lsof -i:7692
 
+
+
 .PHONY: clean
 clean: stop
 	rm ../bin/*
-	rm server/cUDP.txt server/cTCP.txt
+	cd client && make clean
+	cd server && make clean

@@ -732,6 +732,9 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 		/* Send a response back to the client. */
 		if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 			errout(hostname);
+			
+			
+			
 	
 		if(strcmp(command, "QUIT") == 0 || finish)
 			break;

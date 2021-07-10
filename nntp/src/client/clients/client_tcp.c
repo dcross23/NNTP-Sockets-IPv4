@@ -1,29 +1,7 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-#include <time.h>
+#include "client_tcp.h"
 
-#include "../params.h"
 
-/*
- *			M A I N
- *
- *	This routine is the client which request service from the remote.
- *	It creates a connection, sends a number of
- *	requests, shuts down the connection in one direction to signal the
- *	server about the end of data, and then receives all of the responses.
- *	Status will be written to stdout.
- *
- *	The name of the system to which the requests will be sent is given
- *	as a parameter to the command.
- */
-int main(int argc, char** argv)
+int clienttcp(char** argv)
 {
 	int s;				/* connected socket descriptor */
 	struct addrinfo hints, *res;
@@ -35,12 +13,6 @@ int main(int argc, char** argv)
 	char command[COMMAND_SIZE];	/* This example uses COMMAND_SIZE byte messages. */
 	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
 	
-
-	if (argc != 2) {
-		fprintf(stderr, "Usage:  %s <remote host>\n", argv[0]);
-		exit(1);
-	}
-
 	/* Create the socket. */
 	s = socket (AF_INET, SOCK_STREAM, 0);
 	if (s == -1) {
