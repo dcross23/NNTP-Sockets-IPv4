@@ -1,5 +1,6 @@
 #include "server.h"
 #include "../params.h"
+#include "server_commands.h"
 
 
 bool END_LOOP = false;          
@@ -357,6 +358,13 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	int i;	
 	bool commandOK;
 	char command[COMMAND_SIZE];
+	char temp[COMMAND_SIZE];
+	
+	CommandResponse comResp;
+	
+	//LIST
+	int nGroups;
+	char **groupsInfo;
 	
 	
 	/* Look up the host information for the remote host
@@ -385,8 +393,8 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("[SERV TCP] Startup from %s port %u at %s",
-		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+	//printf("[SERV TCP] Startup from %s port %u at %s",
+	//	hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 
 		/* Set the socket for a lingering, graceful close.
 		 * This will cause a final close of this socket to wait until all of the
@@ -435,45 +443,32 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		}
 
 
-	
-		/* Check if command has been received correctly */
-		i=0;
-		commandOK = false;
-		while(i<COMMAND_SIZE){
-			if(command[i] == '\r' && command[i+1] == '\n'){
-				/* Command is correct because it founds "\r\n", so it just 
-				* replaces that \r\n at the end of the command info by a "\0" 
-				* just to work with it as a string
-				*/
-				command[i] = '\0';
-				commandOK = true;
-				break;
-			}
-			
-			if(i == COMMAND_SIZE-2){
-				/* Command is wrong because it doesnt finish with "\r\n"
-				*/
-				commandOK = false;
-				fprintf(stderr, "Error, command received incorrectly, no \\r\\n \n");
-				errout(hostname);
-				break;
-			}
-			i++;
+		if(removeCRLF(command)){
+			fprintf(stderr, "Command without CR-LF. Aborted conexion\n");
+			exit(1);
 		}
-		
-		/* Command is wrong, sends an error message and continues (should stop)*/
-		if(!commandOK){
-			//TODO: command is wrong, send message 
-			fprintf(stderr, "mal\n");
-			continue;
-		}
-		
-		
 		
 //--------	/* Command is ok, just works :D */
 		switch(checkCommand(command)){
 			case LIST:
 				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
+			
+				comResp = list(&groupsInfo, &nGroups);
+				
+				//Send command response with code
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
+				
+				if( RESP_200(comResp.code) ){
+					//Send groups list. Last group is not a group, is ".". This is needed for the client 
+					// to know when the list of groups has finished.
+					for(i=0; i<nGroups; i++){
+						if (send(s, groupsInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
+							errout(hostname);					
+					}					
+			
+				}			
+							
 				break;
 			
 			case NEWGROUPS:
@@ -513,12 +508,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				fprintf(fd, "%-16s -> %s\n","Wrong command D:" , command);
 		}
 		
-
-
-		strtok(command," ");
-		/* Send a response back to the client. */
-		if (send(s, command, COMMAND_SIZE, 0) != COMMAND_SIZE) 
-			errout(hostname);
 	}
 	
 	fclose(fd);
@@ -752,9 +741,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
  
  
  
- 
- 
- 
+
  
  
 /* Checks what command is */
@@ -764,7 +751,11 @@ int checkCommand(char *command){
 	GET_LONGEST_COMMAND(NCOMMANDS, maxLengthCommand)
 	char realCommand[maxLengthCommand];
 	
-	strcpy(realCommand, strtok( strdup(command), " "));	
+	if(strchr(command, ' ') != NULL)
+		strcpy(realCommand, strtok( strdup(command), " "));
+	else
+		strcpy(realCommand, command);
+	
 	for (i=0; i < NCOMMANDS; i++) {
 		Command *com = &commandTable[i];
 		if (strcmp(com->command, realCommand) == 0)

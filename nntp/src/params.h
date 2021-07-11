@@ -9,6 +9,9 @@
 #define RETRIES	5			// > Number of times to retry before givin up
 #define TIMEOUT 6			// > Max time for getting a response
 
+//Carry Return and Line feed (CR and LF)
+#define CR '\r'
+#define LF '\n'
 
 //Commands
 typedef struct {

@@ -1,4 +1,6 @@
+#include "../client_commands.h"
 #include "client_tcp.h"
+
 
 
 int clienttcp(char** argv)
@@ -11,6 +13,7 @@ int clienttcp(char** argv)
 	int addrlen, i, j, errcode;
 	
 	char command[COMMAND_SIZE];	/* This example uses COMMAND_SIZE byte messages. */
+	char response[COMMAND_SIZE];   
 	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
 	
 	/* Create the socket. */
@@ -95,52 +98,120 @@ int clienttcp(char** argv)
 		exit(1);
 	}
 	
+	RESET(command, COMMAND_SIZE);
 	while( fgets(command, sizeof(command), commandsFile) != NULL){
-		printf("[TCP] Command Readed: %s", command);	
+		//printf("[TCP] Command Readed: %s", command);	
+		
+		command[strlen(command) - 2] = '\0';
+		addCRLF(command, COMMAND_SIZE);
+		
 		if (send(s, command, COMMAND_SIZE, 0) != COMMAND_SIZE) {
 			fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
 			fprintf(stderr, "on send number %d\n", i);
 			exit(1);
 		}
 		
-		/* Now, start receiving all of the replys from the server.
-		 * This loop will terminate when the recv returns zero,
-		 * which is an end-of-file condition.  This will happen
-		 * after the server has sent all of its replies, and closed
-		 * its end of the connection.
-		 */
-		i = recv(s, command, COMMAND_SIZE, 0);
-		if (i == -1) {
-	    		perror(argv[0]);
-			fprintf(stderr, "%s: error reading result\n", argv[0]);
-			exit(1);
+		removeCRLF(command);
+		RESET(response, COMMAND_SIZE);
+		
+		printf("\nC:\"%s\"\n", command);
+		
+		
+		switch(checkCommand(command)){
+			case LIST:
+				//Received response
+				i = recv(s, response, COMMAND_SIZE, 0);
+				if (i == -1) {
+			    		perror(argv[0]);
+					fprintf(stderr, "%s: error reading result\n", argv[0]);
+					exit(1);
+				}
+				while (i < COMMAND_SIZE) {
+					j = recv(s, &response[i], COMMAND_SIZE-i, 0);
+					if (j == -1) {
+				     		perror(argv[0]);
+						fprintf(stderr, "%s: error reading result\n", argv[0]);
+						exit(1);
+			       		}
+			       		
+					i += j;
+				}
+				
+				
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+				
+				printf("S: %s\n", response);
+				
+				
+				//Check response code
+				if(RESP_200(GET_CODE(response))){
+					while(1){
+						i = recv(s, response, COMMAND_SIZE, 0);
+						if (i == -1) {
+					    		perror(argv[0]);
+							fprintf(stderr, "%s: error reading result\n", argv[0]);
+							exit(1);
+						}
+						while (i < COMMAND_SIZE) {
+							j = recv(s, &response[i], COMMAND_SIZE-i, 0);
+							if (j == -1) {
+						     		perror(argv[0]);
+								fprintf(stderr, "%s: error reading result\n", argv[0]);
+								exit(1);
+					       		}
+					       		
+							i += j;
+						}
+						
+						
+						if(removeCRLF(response)){
+							fprintf(stderr, "Response without CR-LF. Aborted conexion\n");
+							exit(1);
+						}
+						
+						if(FINISH_RESP(response)) break;
+						
+						printf("S: %s\n", response);
+					}
+				}
+				
+				break;
+			
+			case NEWGROUPS:
+				break;
+			
+			case NEWNEWS:
+				break;
+				
+			case GROUP:
+				break;
+			
+			case ARTICLE:
+				break;
+				
+			case HEAD:
+				break;
+			
+			case BODY:
+				break;
+			
+			case POST:
+				break;
+							
+			case QUIT:
+				printf("S:%s\n", "BYE :D");
+				break;
+				
+			default:
+				printf("S:%s\n", "Wrong command :D");
+			
 		}
-		/* The reason this while loop exists is that there
-		 * is a remote possibility of the above recv returning
-		 * less than COMMAND_SIZE bytes.  This is because a recv returns
-		 * as soon as there is some data, and will not wait for
-		 * all of the requested data to arrive.  Since COMMAND_SIZE bytes
-		 * is relatively small compared to the allowed TCP
-		 * this example had used 2048 bytes requests instead,
-		 * a partial receive would be far more likely.
-		 * This loop will keep receiving until all COMMAND_SIZE bytes
-		 * have been received, thus guaranteeing that the
-		 * next recv at the top of the loop will start at
-		 * the begining of the next reply.
-		 */
-		while (i < COMMAND_SIZE) {
-			j = recv(s, &command[i], COMMAND_SIZE-i, 0);
-			if (j == -1) {
-		     		perror(argv[0]);
-				fprintf(stderr, "%s: error reading result\n", argv[0]);
-				exit(1);
-	       		}
-	       		
-			i += j;
-		}
-
-		/* Print out message indicating the identity of this reply. */
-		printf("[TCP] Command scanned by the server: %s\n\n", command);	
+		
+		RESET(command, COMMAND_SIZE);
 	}
 
 	fclose(commandsFile);
@@ -164,5 +235,29 @@ int clienttcp(char** argv)
 
     /* Print message indicating completion of task. */
 	time(&timevar);
-	printf("[TCP] All done at %s", (char *)ctime(&timevar));
+	printf("\n[TCP] All done at %s", (char *)ctime(&timevar));
+}
+
+
+
+
+/* Checks what command is */
+int checkCommand(char *command){
+	int i;
+	int maxLengthCommand;
+	GET_LONGEST_COMMAND(NCOMMANDS, maxLengthCommand)
+	char realCommand[maxLengthCommand];
+	
+	if(strchr(command, ' ') != NULL)
+		strcpy(realCommand, strtok( strdup(command), " "));
+	else
+		strcpy(realCommand, command);
+	
+	for (i=0; i < NCOMMANDS; i++) {
+		Command *com = &commandTable[i];
+		if (strcmp(com->command, realCommand) == 0)
+		    return com->id;
+	}
+	
+	return WRONG_COMMAND;
 }

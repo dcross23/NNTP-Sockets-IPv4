@@ -17,6 +17,10 @@
 #include <stdbool.h>
 
 #define MAXHOST 	128
+#define RESP_200(code) (code >= 200 && code < 300)
+#define RESP_300(code) (code >= 300 && code < 400)
+#define RESP_400(code) (code >= 400 && code < 500)
+#define RESP_500(code) (code >= 500 && code < 600)
 
 extern int errno;
 

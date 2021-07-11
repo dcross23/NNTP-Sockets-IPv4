@@ -14,6 +14,10 @@
 
 #include "../../params.h"
 
+
+int checkCommand(char *command);
+
+
 /*
  *			C L I E N T   T C P
  *
