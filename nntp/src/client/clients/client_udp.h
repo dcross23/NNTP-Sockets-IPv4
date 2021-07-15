@@ -21,6 +21,9 @@
 
 extern int errno;
 
+
+
+
 /*
  *			H A N D L E R
  *

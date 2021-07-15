@@ -41,4 +41,24 @@ int removeCRLF(char *s){
 	}
 }
 
+/* Checks what command is */
+int checkCommand(char *command){
+	int i;
+	int maxLengthCommand;
+	GET_LONGEST_COMMAND(NCOMMANDS, maxLengthCommand)
+	char realCommand[maxLengthCommand];
+	
+	if(strchr(command, ' ') != NULL)
+		strcpy(realCommand, strtok( strdup(command), " "));
+	else
+		strcpy(realCommand, command);
+	
+	for (i=0; i < NCOMMANDS; i++) {
+		Command *com = &commandTable[i];
+		if (strcmp(com->command, realCommand) == 0)
+		    return com->id;
+	}
+	
+	return WRONG_COMMAND;
+}
 

@@ -37,7 +37,7 @@ int clienttcp(char** argv)
 	hints.ai_family = AF_INET;
 	
 	
- 	 /* esta función es la recomendada para la compatibilidad con IPv6 gethostbyname queda obsoleta*/
+ 	 /* esta funciÃ³n es la recomendada para la compatibilidad con IPv6 gethostbyname queda obsoleta*/
 	errcode = getaddrinfo (argv[1], NULL, &hints, &res); 
 	if (errcode != 0){
 			/* Name was not found.  Return a
@@ -94,14 +94,13 @@ int clienttcp(char** argv)
 
 	commandsFile = fopen("../src/client/someNNTPCommands.txt", "r");
 	if(commandsFile == NULL){
-		fprintf(stderr, "Cannot read NNTP commands file\n");
+		fprintf(stderr, "[TCP] Cannot read NNTP commands file\n");
 		exit(1);
 	}
 	
 	RESET(command, COMMAND_SIZE);
 	while( fgets(command, sizeof(command), commandsFile) != NULL){
-		//printf("[TCP] Command Readed: %s", command);	
-		
+	
 		command[strlen(command) - 2] = '\0';
 		addCRLF(command, COMMAND_SIZE);
 		
@@ -111,11 +110,14 @@ int clienttcp(char** argv)
 			exit(1);
 		}
 		
-		removeCRLF(command);
+		if(removeCRLF(command)){
+			fprintf(stderr, "[TCP] Command without CR-LF. Aborted \"conexion\" \n");
+			exit(1);
+		}
+		
 		RESET(response, COMMAND_SIZE);
 		
 		printf("\nC:\"%s\"\n", command);
-		
 		
 		switch(checkCommand(command)){
 			case LIST:
@@ -123,14 +125,14 @@ int clienttcp(char** argv)
 				i = recv(s, response, COMMAND_SIZE, 0);
 				if (i == -1) {
 			    		perror(argv[0]);
-					fprintf(stderr, "%s: error reading result\n", argv[0]);
+					fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
 					exit(1);
 				}
 				while (i < COMMAND_SIZE) {
 					j = recv(s, &response[i], COMMAND_SIZE-i, 0);
 					if (j == -1) {
 				     		perror(argv[0]);
-						fprintf(stderr, "%s: error reading result\n", argv[0]);
+						fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
 						exit(1);
 			       		}
 			       		
@@ -140,7 +142,7 @@ int clienttcp(char** argv)
 				
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
 					exit(1);
 				}
 				
@@ -153,14 +155,14 @@ int clienttcp(char** argv)
 						i = recv(s, response, COMMAND_SIZE, 0);
 						if (i == -1) {
 					    		perror(argv[0]);
-							fprintf(stderr, "%s: error reading result\n", argv[0]);
+							fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
 							exit(1);
 						}
 						while (i < COMMAND_SIZE) {
 							j = recv(s, &response[i], COMMAND_SIZE-i, 0);
 							if (j == -1) {
 						     		perror(argv[0]);
-								fprintf(stderr, "%s: error reading result\n", argv[0]);
+								fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
 								exit(1);
 					       		}
 					       		
@@ -169,7 +171,7 @@ int clienttcp(char** argv)
 						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
 							exit(1);
 						}
 						
@@ -178,7 +180,6 @@ int clienttcp(char** argv)
 						printf("S: %s\n", response);
 					}
 				}
-				
 				break;
 			
 			case NEWGROUPS:
@@ -239,25 +240,3 @@ int clienttcp(char** argv)
 }
 
 
-
-
-/* Checks what command is */
-int checkCommand(char *command){
-	int i;
-	int maxLengthCommand;
-	GET_LONGEST_COMMAND(NCOMMANDS, maxLengthCommand)
-	char realCommand[maxLengthCommand];
-	
-	if(strchr(command, ' ') != NULL)
-		strcpy(realCommand, strtok( strdup(command), " "));
-	else
-		strcpy(realCommand, command);
-	
-	for (i=0; i < NCOMMANDS; i++) {
-		Command *com = &commandTable[i];
-		if (strcmp(com->command, realCommand) == 0)
-		    return com->id;
-	}
-	
-	return WRONG_COMMAND;
-}

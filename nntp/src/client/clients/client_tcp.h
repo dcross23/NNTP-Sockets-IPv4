@@ -15,7 +15,6 @@
 #include "../../params.h"
 
 
-int checkCommand(char *command);
 
 
 /*

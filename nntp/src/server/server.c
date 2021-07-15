@@ -356,9 +356,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				    	/* used when setting SO_LINGER */
 			
 	int i;	
-	bool commandOK;
 	char command[COMMAND_SIZE];
-	char temp[COMMAND_SIZE];
 	
 	CommandResponse comResp;
 	
@@ -585,8 +583,13 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	bool finish = false;
 	
 	int i;	
-	bool commandOK;
 	char command[COMMAND_SIZE];
+	
+	CommandResponse comResp;
+	
+	//LIST
+	int nGroups;
+	char **groupsInfo;
 
 				
 	/* Look up the host information for the remote host
@@ -633,41 +636,14 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			}
 		}
-		
-		if(n_retry == 0){ 
-			break;
-		}
+		if(n_retry == 0) break; 
+	
+	
 	
 		/* Check if command has been received correctly */
-		i=0;
-		commandOK = false;
-		while(i<COMMAND_SIZE){
-			if(command[i] == '\r' && command[i+1] == '\n'){
-				/* Command is correct because it founds "\r\n", so it just 
-				* replaces that \r\n at the end of the command info by a "\0" 
-				* just to work with it as a string
-				*/
-				command[i] = '\0';
-				commandOK = true;
-				break;
-			}
-			
-			if(i == COMMAND_SIZE-2){
-				/* Command is wrong because it doesnt finish with "\r\n"
-				*/
-				commandOK = false;
-				fprintf(stderr, "Error, command received incorrectly, no \\r\\n \n");
-				errout(hostname);
-				break;
-			}
-			i++;
-		}
-		
-		/* Command is wrong, sends an error message and continues (should stop)*/
-		if(!commandOK){
-			//TODO: command is wrong, send message 
-			fprintf(stderr, "mal\n");
-			continue;
+		if(removeCRLF(command)){
+			fprintf(stderr, "[SUDP] Command without CR-LF. Aborted \"conexion\" \n");
+			exit(1);
 		}
 		
 		
@@ -676,6 +652,22 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 		switch(checkCommand(command)){
 			case LIST:
 				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
+			
+				comResp = list(&groupsInfo, &nGroups);
+				
+				//Send command response with code
+				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
+				
+				if( RESP_200(comResp.code) ){
+					//Send groups list. Last group is not a group, is ".". This is needed for the client 
+					// to know when the list of groups has finished.
+					for(i=0; i<nGroups; i++){
+						if (sendto(s, groupsInfo[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+							errout(hostname);
+					}					
+			
+				}
 				break;
 			
 			case NEWGROUPS:
@@ -717,14 +709,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 		}
 		
 
-		strtok(command," ");
-		/* Send a response back to the client. */
-		if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
-			errout(hostname);
-			
-			
-			
-	
 		if(strcmp(command, "QUIT") == 0 || finish)
 			break;
 	}

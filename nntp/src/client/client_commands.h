@@ -28,6 +28,7 @@ typedef struct commandResponse{
 int numLines(FILE *file);
 void addCRLF(char *s, int size);
 int removeCRLF(char *s);
+int checkCommand(char *command);
 
 
 #endif

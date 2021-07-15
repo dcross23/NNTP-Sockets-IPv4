@@ -1,3 +1,4 @@
+#include "../client_commands.h"
 #include "client_udp.h"
 
 
@@ -21,6 +22,7 @@ int clientudp(char **argv)
 	struct addrinfo hints, *res;
 	
 	char command[COMMAND_SIZE];	/* This example uses COMMAND_SIZE byte messages. */
+	char response[COMMAND_SIZE];  
 	char tmp[COMMAND_SIZE];
 	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
 
@@ -84,7 +86,7 @@ int clientudp(char **argv)
 	hints.ai_family = AF_INET;
 	
 	
-	/* esta función es la recomendada para la compatibilidad con IPv6 gethostbyname queda obsoleta*/
+	/* esta funciÃ³n es la recomendada para la compatibilidad con IPv6 gethostbyname queda obsoleta*/
 	errcode = getaddrinfo (argv[1], NULL, &hints, &res); 
 	if (errcode != 0){
 		/* Name was not found.  Return a
@@ -143,31 +145,140 @@ int clientudp(char **argv)
 		}
 	}
 	
-	if(n_retry == 0){ 
-		exit(1);
-	}
+	if(n_retry == 0) exit(1);
 	
 	
 	
 //---------
+
 	commandsFile = fopen("../src/client/someNNTPCommands.txt", "r");
 	if(commandsFile == NULL){
 		fprintf(stderr, "Cannot read NNTP commands file\n");
 		exit(1);
 	}	
 	
+	RESET(command, COMMAND_SIZE);
 	while( fgets(command, sizeof(command), commandsFile) != NULL){
-		//Sends command to server
+	
+		command[strlen(command) - 2] = '\0';
+		addCRLF(command, COMMAND_SIZE);
+	
 		if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
 			fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
 			fprintf(stderr, "on send number %d\n", i);
 			exit(1);
 		}
 		
-		printf("[UDP] Command Readed: %s", command);	
+		if(removeCRLF(command)){
+			fprintf(stderr, "[UDP]Command without CR-LF. Aborted \"conexion\" \n");
+			exit(1);
+		}
+		
+		RESET(response, COMMAND_SIZE);
+		
+		printf("\nC:\"%s\"\n", command);	
+		
+		switch(checkCommand(command)){
+			case LIST:		
+				//Received response		
+				n_retry = RETRIES;
+				while(n_retry > 0){
+					alarm(TIMEOUT);
+					if (recvfrom (s, response, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
+						if (errno == EINTR) {
+		 		     			fprintf(stderr,"Alarm went off.\n");
+		 		     			n_retry--; 
+						} else  {
+							fprintf(stderr,"Unable to get response to \"connect\"\n");
+							exit(1); 
+						}
+					}else{
+						alarm(0);
+						//printf("[UDP] Command scanned by the server: %s\n\n", command);	
+						
+						break;
+					}
+				}
+				
+				if(n_retry == 0)exit(1);
+				
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"conexion\" \n");
+					exit(1);
+				}
+				
+				printf("S: %s\n", response);
+				
+				
+				//Check response code
+				if(RESP_200(GET_CODE(response))){
+					while(1){
+						
+						n_retry = RETRIES;
+						while(n_retry > 0){
+							alarm(TIMEOUT);
+							if (recvfrom (s, response, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
+								if (errno == EINTR) {
+		 		     					fprintf(stderr,"Alarm went off.\n");
+		 		     					n_retry--; 
+								} else  {
+									fprintf(stderr,"Unable to get response to \"connect\"\n");
+								}
+							}else{
+								alarm(0);
+								break;
+							}
+						}
+				
+						if(n_retry == 0)exit(1);
+						
+						if(removeCRLF(response)){
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							exit(1);
+						}
+						
+						if(FINISH_RESP(response)) break;
+						
+						printf("S: %s\n", response);
+					}
+				}
+				break;
+			
+			case NEWGROUPS:
+				break;
+			
+			case NEWNEWS:
+				break;
+				
+			case GROUP:
+				break;
+			
+			case ARTICLE:
+				break;
+				
+			case HEAD:
+				break;
+			
+			case BODY:
+				break;
+			
+			case POST:
+				break;
+							
+			case QUIT:
+				printf("S:%s\n", "BYE :D");
+				break;
+				
+			default:
+				printf("S:%s\n", "Wrong command :D");
+			
+		}
+		
+		RESET(command, COMMAND_SIZE);
 		
 		//Receive response from the server
-		n_retry = RETRIES;
+		/*n_retry = RETRIES;
 		while(n_retry > 0){
 			alarm(TIMEOUT);
 			if (recvfrom (s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
@@ -187,9 +298,7 @@ int clientudp(char **argv)
 			}
 		}
 		
-		if(n_retry == 0){ 
-			exit(1);
-		}
+		if(n_retry == 0)exit(1);*/
 	}
 
 	fclose(commandsFile);
@@ -200,3 +309,5 @@ int clientudp(char **argv)
 	time(&timevar);
 	printf("[UDP] All done at %s", (char *)ctime(&timevar));
 }
+
+
