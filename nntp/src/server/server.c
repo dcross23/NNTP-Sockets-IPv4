@@ -451,6 +451,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			case LIST:
 				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
 			
+				//Process command (get groups)
 				comResp = list(&groupsInfo, &nGroups);
 				
 				//Send command response with code

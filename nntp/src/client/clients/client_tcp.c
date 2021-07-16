@@ -2,6 +2,23 @@
 #include "client_tcp.h"
 
 
+int recvTCP(int s, char *response, int size){
+	int i, j;
+
+	i = recv(s, response, size, 0);
+	if (i == -1) 
+		return -1;
+
+	while (i < COMMAND_SIZE) {
+		j = recv(s, &response[i], size-i, 0);
+		if (j == -1)
+			return -1;
+		i += j;
+	}
+	
+	return 0;
+}
+
 
 int clienttcp(char** argv)
 {
@@ -122,21 +139,10 @@ int clienttcp(char** argv)
 		switch(checkCommand(command)){
 			case LIST:
 				//Received response
-				i = recv(s, response, COMMAND_SIZE, 0);
-				if (i == -1) {
-			    		perror(argv[0]);
+				if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+					perror(argv[0]);
 					fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
 					exit(1);
-				}
-				while (i < COMMAND_SIZE) {
-					j = recv(s, &response[i], COMMAND_SIZE-i, 0);
-					if (j == -1) {
-				     		perror(argv[0]);
-						fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
-						exit(1);
-			       		}
-			       		
-					i += j;
 				}
 				
 				
@@ -152,21 +158,12 @@ int clienttcp(char** argv)
 				//Check response code
 				if(RESP_200(GET_CODE(response))){
 					while(1){
-						i = recv(s, response, COMMAND_SIZE, 0);
-						if (i == -1) {
-					    		perror(argv[0]);
+						RESET(response, COMMAND_SIZE);
+					
+						if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+							perror(argv[0]);
 							fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
 							exit(1);
-						}
-						while (i < COMMAND_SIZE) {
-							j = recv(s, &response[i], COMMAND_SIZE-i, 0);
-							if (j == -1) {
-						     		perror(argv[0]);
-								fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
-								exit(1);
-					       		}
-					       		
-							i += j;
 						}
 						
 						

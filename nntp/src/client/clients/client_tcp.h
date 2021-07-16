@@ -14,7 +14,11 @@
 
 #include "../../params.h"
 
-
+/*
+ * Groups the action of recieving a message using TCP conexion. This is calling
+ *  recv function and waiting in case there is more data arrieving
+ */
+int recvTCP(int s, char *response, int size);
 
 
 /*

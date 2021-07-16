@@ -2,11 +2,37 @@
 #include "client_udp.h"
 
 
+
 void handler()
 {
 	printf("Alarma recibida \n");
 }
 
+
+
+int recvUDP(int s, char *response, int size, struct sockaddr_in *servaddr_in, int *addrlen){
+	int n_retry;
+
+	n_retry = RETRIES;
+	while(n_retry > 0){
+		alarm(TIMEOUT);
+		if (recvfrom (s, response, size, 0, (struct sockaddr *) servaddr_in, addrlen) == -1) {
+			if (errno == EINTR) {
+	     			fprintf(stderr,"Alarm went off.\n");
+	     			n_retry--; 
+			} else  {
+				fprintf(stderr,"Unable to get response to \"connect\"\n");
+				return -1;
+			}
+		}else{
+			alarm(0);
+			break;
+		}
+	}
+	if(n_retry == 0) return -1;
+		
+	return 0;
+}
 
 
 
@@ -17,7 +43,7 @@ int clientudp(char **argv)
 	long timevar;                   /* contains time returned by time() */
 	struct sockaddr_in myaddr_in;	/* for local socket address */
 	struct sockaddr_in servaddr_in;	/* for server socket address */
-	int	addrlen, n_retry;
+	int	addrlen;
 	struct sigaction vec;
 	struct addrinfo hints, *res;
 	
@@ -125,28 +151,9 @@ int clientudp(char **argv)
 	}	
 	
 	/* Waits for the response of the server with the new socket it has to talk to */
-	n_retry = RETRIES;
-	while(n_retry > 0){
-		alarm(TIMEOUT);
-		if (recvfrom (s, tmp, 1, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
-			if (errno == EINTR) {
-				 /* Need to retry the request if we have
-				 * not already exceeded the retry limit.
-				 */
-	 		     fprintf(stderr,"Alarm went off.\n");
-	 		     n_retry--; 
-			} else  {
-				fprintf(stderr,"Unable to get response to \"connect\"\n");
-				exit(1); 
-			}
-		}else{
-			alarm(0);
-			break;
-		}
-	}
-	
-	if(n_retry == 0) exit(1);
-	
+	if(-1 == recvUDP(s, tmp, 1, &servaddr_in, &addrlen)){
+		exit(1);
+	}	
 	
 	
 //---------
@@ -180,27 +187,10 @@ int clientudp(char **argv)
 		
 		switch(checkCommand(command)){
 			case LIST:		
-				//Received response		
-				n_retry = RETRIES;
-				while(n_retry > 0){
-					alarm(TIMEOUT);
-					if (recvfrom (s, response, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
-						if (errno == EINTR) {
-		 		     			fprintf(stderr,"Alarm went off.\n");
-		 		     			n_retry--; 
-						} else  {
-							fprintf(stderr,"Unable to get response to \"connect\"\n");
-							exit(1); 
-						}
-					}else{
-						alarm(0);
-						//printf("[UDP] Command scanned by the server: %s\n\n", command);	
-						
-						break;
-					}
+				//Received response	
+				if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+					exit(1);
 				}
-				
-				if(n_retry == 0)exit(1);
 				
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
@@ -208,31 +198,16 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
+				//Print response
 				printf("S: %s\n", response);
-				
 				
 				//Check response code
 				if(RESP_200(GET_CODE(response))){
 					while(1){
-						
-						n_retry = RETRIES;
-						while(n_retry > 0){
-							alarm(TIMEOUT);
-							if (recvfrom (s, response, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
-								if (errno == EINTR) {
-		 		     					fprintf(stderr,"Alarm went off.\n");
-		 		     					n_retry--; 
-								} else  {
-									fprintf(stderr,"Unable to get response to \"connect\"\n");
-								}
-							}else{
-								alarm(0);
-								break;
-							}
+						if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+							exit(1);
 						}
 				
-						if(n_retry == 0)exit(1);
-						
 						if(removeCRLF(response)){
 							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
 							exit(1);
@@ -276,29 +251,6 @@ int clientudp(char **argv)
 		}
 		
 		RESET(command, COMMAND_SIZE);
-		
-		//Receive response from the server
-		/*n_retry = RETRIES;
-		while(n_retry > 0){
-			alarm(TIMEOUT);
-			if (recvfrom (s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, &addrlen) == -1) {
-				if (errno == EINTR) {
-		 		     fprintf(stderr,"Alarm went off.\n");
-		 		     n_retry--; 
-				} else  {
-					fprintf(stderr,"Unable to get response to \"connect\"\n");
-					exit(1); 
-				}
-			}else{
-				alarm(0);
-				// Print out message indicating the identity of this reply. 
-				printf("[UDP] Command scanned by the server: %s\n\n", command);	
-				
-				break;
-			}
-		}
-		
-		if(n_retry == 0)exit(1);*/
 	}
 
 	fclose(commandsFile);

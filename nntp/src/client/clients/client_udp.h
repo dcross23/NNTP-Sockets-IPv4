@@ -22,6 +22,11 @@
 extern int errno;
 
 
+/*
+ * Groups the action of recieving a message using TCP conexion. This is calling
+ *  recv function and waiting in case there is more data arrieving
+ */
+int recvUDP(int s, char *response, int size, struct sockaddr_in *servaddr_in, int *addrlen);
 
 
 /*
