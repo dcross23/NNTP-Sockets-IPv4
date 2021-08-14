@@ -132,9 +132,9 @@ int clienttcp(char** argv)
 			exit(1);
 		}
 		
-		RESET(response, COMMAND_SIZE);
-		
 		printf("\nC:\"%s\"\n", command);
+
+		RESET(response, COMMAND_SIZE);
 		
 		switch(checkCommand(command)){
 			case LIST:
@@ -180,6 +180,44 @@ int clienttcp(char** argv)
 				break;
 			
 			case NEWGROUPS:
+				//Received response
+				if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+					perror(argv[0]);
+					fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+				
+				
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+				
+				printf("S: %s\n", response);
+
+				//Check response code
+				if(RESP_200(GET_CODE(response))){
+					while(1){
+						RESET(response, COMMAND_SIZE);
+					
+						if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+							perror(argv[0]);
+							fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
+							exit(1);
+						}
+						
+						
+						if(removeCRLF(response)){
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							exit(1);
+						}
+						
+						if(FINISH_RESP(response)) break;
+						
+						printf("S: %s\n", response);
+					}
+				}
 				break;
 			
 			case NEWNEWS:

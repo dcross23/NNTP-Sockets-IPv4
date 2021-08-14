@@ -362,7 +362,11 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	
 	//LIST
 	int nGroups;
-	char **groupsInfo;
+	char **groupsInfo = NULL;
+
+	//NEWSGROUPS
+	char **groupsMatched = NULL;
+
 	
 	
 	/* Look up the host information for the remote host
@@ -418,6 +422,8 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 
 	FILE* fd = fopen("../src/server/cTCP.txt", "w");
 	
+
+	//Main loop
 	while (len = recv(s, command, COMMAND_SIZE, 0)) {
 		if (len == -1) errout(hostname); /* error from recv */
 			/* The reason this while loop exists is that there
@@ -451,6 +457,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			case LIST:
 				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
 			
+				nGroups = 0;
 				//Process command (get groups)
 				comResp = list(&groupsInfo, &nGroups);
 				
@@ -470,10 +477,31 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 							
 				break;
 			
+
+
 			case NEWGROUPS:
 				fprintf(fd, "%-16s -> %s\n","Comand NEWGROUPS:" , command);
+
+				nGroups = 0;
+				//Process command (get groups that match)
+				comResp = newgroups(command, &groupsMatched, &nGroups);
+
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
+
+				if(RESP_200(comResp.code)){
+					//Send groups list that had matched. Last group is not a group, is ".". 
+					// This is needed for the client to know when the list of groups has finished.
+					for(i=0; i<nGroups; i++){
+						if (send(s, groupsMatched[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
+							errout(hostname);				
+					}		
+				}
+
 				break;
 			
+
+
 			case NEWNEWS:
 				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
 				break;
