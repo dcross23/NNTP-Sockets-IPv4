@@ -618,7 +618,10 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	
 	//LIST
 	int nGroups;
-	char **groupsInfo;
+	char **groupsInfo = NULL;
+
+	//NEWSGROUPS
+	char **groupsMatched = NULL;
 
 				
 	/* Look up the host information for the remote host
@@ -682,6 +685,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 			case LIST:
 				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
 			
+				nGroups = 0;
 				comResp = list(&groupsInfo, &nGroups);
 				
 				//Send command response with code
@@ -701,6 +705,22 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 			
 			case NEWGROUPS:
 				fprintf(fd, "%-16s -> %s\n","Comand NEWGROUPS:" , command);
+
+				nGroups = 0;
+				//Process command (get groups that match)
+				comResp = newgroups(command, &groupsMatched, &nGroups);
+
+				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
+
+				if(RESP_200(comResp.code)){
+					//Send groups list that had matched. Last group is not a group, is ".". 
+					// This is needed for the client to know when the list of groups has finished.
+					for(i=0; i<nGroups; i++){
+						if (sendto(s, groupsMatched[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+							errout(hostname);				
+					}		
+				}
 				break;
 			
 			case NEWNEWS:

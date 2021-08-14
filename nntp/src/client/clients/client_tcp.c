@@ -152,9 +152,9 @@ int clienttcp(char** argv)
 					exit(1);
 				}
 				
+				//Print response
 				printf("S: %s\n", response);
-				
-				
+					
 				//Check response code
 				if(RESP_200(GET_CODE(response))){
 					while(1){
