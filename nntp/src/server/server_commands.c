@@ -88,7 +88,7 @@ CommandResponse list(char ***groupsInfo, int *nGroups){
 
 
 /**
- * NEWGROUSPS command
+ * NEWGROUPS command
  */
 CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups){
 	FILE *groupsFile;
@@ -106,7 +106,7 @@ CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups){
 	char *gName;
 
 
-	if(!regcomp(&dateHourRegex, NEWSGROUPS_REGEX, REG_EXTENDED)){
+	if(!regcomp(&dateHourRegex, DATE_HOUR_REGEX, REG_EXTENDED)){
 		perror("DateHourRegex \n");
 	}
 
@@ -195,3 +195,123 @@ CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups){
 	fclose(groupsFile);
 	return comResp;	
 }
+
+
+
+/**
+ * NEWNEWS command
+ */
+CommandResponse newnews(char *command){
+	CommandResponse comResp;
+	FILE *groupsFile;
+	DIR *groupDir;
+	char groupRoute[COMMAND_SIZE], aux[COMMAND_SIZE];
+	char *subgroup;
+	
+	char *date, *hour, *group, *gdate, *ghour;
+	regex_t dateHourRegex, groupRegex;
+	bool sintaxError = false;
+
+	uint16_t day, month, year, hours, min, sec;
+	uint16_t gday, gmonth, gyear, ghours, gmin, gsec;
+	int i;
+
+	char *gName;
+
+	if(!regcomp(&dateHourRegex, DATE_HOUR_REGEX, REG_EXTENDED)){
+		perror("DateHourRegex \n");
+	}
+
+	if(!regcomp(&groupRegex, NEWNEWS_GROUP_REGEX, REG_EXTENDED)){
+		perror("GroupRegex \n");
+	}
+
+
+	strtok(command, " "); //Discards 'NEWNEWS' (name of the command)
+	
+	//Invalid group
+	group = strtok(NULL, " ");
+	if(regexec(&groupRegex, group, 0, NULL, 0) == REG_NOMATCH) sintaxError = true;
+
+	if(sintaxError){
+		printf("\n F por el regex del grupo \n");
+	}
+
+	//Invalid date
+	date = strtok(NULL, " ");
+	if(regexec(&dateHourRegex, date, 0, NULL, 0) == REG_NOMATCH) sintaxError = true;
+
+	//Invalid hour
+	hour = strtok(NULL, " ");
+	if(regexec(&dateHourRegex, hour, 0, NULL, 0) == REG_NOMATCH) sintaxError = true;
+
+	//Invalid number of arguments
+	if(strtok(NULL, " ") != NULL) sintaxError = true;
+
+	if(sintaxError){
+		comResp = (CommandResponse){501, "501 Error de sintaxis en NEWNEWS GROUP YYMMDD HHMMSS."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+
+
+	//Sintax is correct, now parse command
+	//Get date and hour
+	year = atoi(date)/10000;
+	month = (atoi(date) % 10000) / 100;
+	day = atoi(date) % 100;
+	
+	hours = atoi(hour)/10000;
+	min = (atoi(hour) % 10000) / 100;
+	sec = atoi(hour) % 100;
+
+
+	//Get full route to get the group
+	strcpy(groupRoute, "../noticias/articulos");
+	strcpy(aux, "/"); strcat(aux, strtok(group,"."));
+	strcat(groupRoute, aux);
+
+	while(NULL != (subgroup = strtok(NULL,"."))){
+		strcat(groupRoute, "/");
+		strcat(groupRoute, subgroup);
+	}
+
+	groupDir = opendir(groupRoute);
+	//Directory exists
+	if(groupDir){
+		closedir(groupDir);
+
+		if(NULL == (groupsFile = fopen("../noticias/grupos", "r"))){
+			comResp = (CommandResponse){-1, "Error"};
+			addCRLF(comResp.message, COMMAND_SIZE);
+			return comResp;
+		}
+
+		while( fgets(aux, COMMAND_SIZE, groupsFile) ){
+			aux[strlen(aux) - 1] = '\0';
+			
+			
+					
+		}
+
+
+		comResp = (CommandResponse){230, ""};
+		sprintf(comResp.message, "230 Nuevos articulos desde %02d/%02d/%02d %02d:%02d:%02d.",day, month, year, hours, min, sec);
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+	//Directory does not exist
+	else{
+		comResp = (CommandResponse){411, "411 No existe ese grupo de noticias."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+	}
+
+	return comResp;
+} 
+
+
+
+
+
+
+

@@ -7,11 +7,13 @@
 #include <regex.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <dirent.h>
 
 #include "../params.h"
 
 //REGEX
-static const char NEWSGROUPS_REGEX[] = "^[0-9]{6}$";
+static const char DATE_HOUR_REGEX[] = "^[0-9]{6}$";
+static const char NEWNEWS_GROUP_REGEX[] = "^[^\.](.+)\.((.+)\.)*(.*)[^\.]$";
 
 
 /**
@@ -36,6 +38,7 @@ int removeCRLF(char *s);
  */
 CommandResponse list(char ***groupsInfo, int *nGroups);
 
+
 /**
  * NEWGROUPS:
  * @param YYMMDD 
@@ -55,6 +58,15 @@ CommandResponse list(char ***groupsInfo, int *nGroups);
 	}while(0);
 
 CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups);
+
+
+/**
+ * NEWNEWS:
+ * @param group
+ * @param YYMMDD
+ * @param HHMMSS
+ */
+CommandResponse newnews(char *command);
 
 
 #endif

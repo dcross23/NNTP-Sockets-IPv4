@@ -504,6 +504,11 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 
 			case NEWNEWS:
 				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
+
+				comResp = newnews(command);
+
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
 				break;
 				
 			case GROUP:
@@ -725,6 +730,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 			
 			case NEWNEWS:
 				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
+
 				break;
 				
 			case GROUP:
