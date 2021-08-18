@@ -7,11 +7,13 @@
 #include <regex.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <dirent.h>
 
 #include "../params.h"
 
 //REGEX
-static const char NEWSGROUPS_REGEX[] = "^[0-9]{6}$";
+static const char DATE_HOUR_REGEX[] = "^[0-9]{6}$";
+static const char NEWNEWS_GROUP_REGEX[] = "^[^\.](.+)\.((.+)\.)*(.*)[^\.]$";
 
 
 /**
@@ -36,6 +38,7 @@ int removeCRLF(char *s);
  */
 CommandResponse list(char ***groupsInfo, int *nGroups);
 
+
 /**
  * NEWGROUPS:
  * @param YYMMDD 
@@ -55,6 +58,18 @@ CommandResponse list(char ***groupsInfo, int *nGroups);
 	}while(0);
 
 CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups);
+
+
+/**
+ * NEWNEWS:
+ * @param group
+ * @param YYMMDD
+ * @param HHMMSS
+ * Sends to the client the number, id and subject of the article in the group specified
+ *  that was created at a later date and time that the ones specified in params with format 
+ *  YYMMDD (year, month and day) and HHMMSS (hour, minute, second) 
+ */
+CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles);
 
 
 #endif

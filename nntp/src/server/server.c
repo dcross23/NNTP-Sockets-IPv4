@@ -367,7 +367,9 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	//NEWSGROUPS
 	char **groupsMatched = NULL;
 
-	
+	//NEWNEWS
+	char **articlesMatched = NULL;
+	int nArticles;
 	
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
@@ -472,9 +474,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 						if (send(s, groupsInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
 							errout(hostname);					
 					}					
-			
-				}			
-							
+				}				
 				break;
 			
 
@@ -504,6 +504,23 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 
 			case NEWNEWS:
 				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
+
+				nArticles = 0;
+				//Process command (get articles that match)
+				comResp = newnews(command, &articlesMatched, &nArticles);
+
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
+
+				if(RESP_200(comResp.code)){
+					//Send articles list that had matched. Last group is not a group, is ".". 
+					// This is needed for the client to know when the list of groups has finished.
+					for(i=0; i<nArticles; i++){
+						if (send(s, articlesMatched[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
+							errout(hostname);	
+					}		
+				}
+
 				break;
 				
 			case GROUP:
@@ -623,6 +640,9 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	//NEWSGROUPS
 	char **groupsMatched = NULL;
 
+	//NEWNEWS
+	char **articlesMatched = NULL;
+	int nArticles;
 				
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
@@ -725,6 +745,23 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 			
 			case NEWNEWS:
 				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
+
+				nArticles = 0;
+				//Process command (get articles that match)
+				comResp = newnews(command, &articlesMatched, &nArticles);
+
+				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
+
+				if(RESP_200(comResp.code)){
+					//Send articles list that had matched. Last group is not a group, is ".". 
+					// This is needed for the client to know when the list of groups has finished.
+					for(i=0; i<nArticles; i++){
+						if (sendto(s, articlesMatched[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+							errout(hostname);	
+					}		
+				}
+
 				break;
 				
 			case GROUP:
