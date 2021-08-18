@@ -232,7 +232,6 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
 					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
@@ -250,8 +249,7 @@ int clientudp(char **argv)
 							perror(argv[0]);
 							fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
 							exit(1);
-						}
-						
+						}						
 						
 						if(removeCRLF(response)){
 							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
@@ -266,6 +264,43 @@ int clientudp(char **argv)
 				break;
 			
 			case NEWNEWS:
+				//Received response
+					if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+					perror(argv[0]);
+					fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+				
+				printf("S: %s\n", response);
+
+				if(RESP_200(GET_CODE(response))){
+					printf("  (Numero - ID - Tema)\n");
+
+					while(1){
+						RESET(response, COMMAND_SIZE);
+					
+						if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+							perror(argv[0]);
+							fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+							exit(1);
+						}
+												
+						if(removeCRLF(response)){
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							exit(1);
+						}
+						
+						if(FINISH_RESP(response)) break;
+						
+						printf("S: %s\n", response);
+					}
+				}
 				break;
 				
 			case GROUP:
