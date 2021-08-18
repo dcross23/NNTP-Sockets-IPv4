@@ -65,8 +65,11 @@ CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups);
  * @param group
  * @param YYMMDD
  * @param HHMMSS
+ * Sends to the client the number, id and subject of the article in the group specified
+ *  that was created at a later date and time that the ones specified in params with format 
+ *  YYMMDD (year, month and day) and HHMMSS (hour, minute, second) 
  */
-CommandResponse newnews(char *command);
+CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles);
 
 
 #endif

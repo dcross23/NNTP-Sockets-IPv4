@@ -106,7 +106,7 @@ CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups){
 	char *gName;
 
 
-	if(!regcomp(&dateHourRegex, DATE_HOUR_REGEX, REG_EXTENDED)){
+	if(regcomp(&dateHourRegex, DATE_HOUR_REGEX, REG_EXTENDED)){
 		perror("DateHourRegex \n");
 	}
 
@@ -201,28 +201,30 @@ CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups){
 /**
  * NEWNEWS command
  */
-CommandResponse newnews(char *command){
+CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles){
 	CommandResponse comResp;
-	FILE *groupsFile;
+	FILE *groupsFile, *articleFile;
 	DIR *groupDir;
-	char groupRoute[COMMAND_SIZE], aux[COMMAND_SIZE];
-	char *subgroup;
+	char groupRoute[COMMAND_SIZE], articleRoute[COMMAND_SIZE];
+	char aux[COMMAND_SIZE], *aux2;
 	
-	char *date, *hour, *group, *gdate, *ghour;
+	char *date, *hour, *group, *subgroup, *adate, *ahour;
 	regex_t dateHourRegex, groupRegex;
 	bool sintaxError = false;
-
 	uint16_t day, month, year, hours, min, sec;
-	uint16_t gday, gmonth, gyear, ghours, gmin, gsec;
-	int i;
+	uint16_t aday, amonth, ayear, ahours, amin, asec;
 
-	char *gName;
+	int nLastArticle;
+	char *rowName;
+	char subject[COMMAND_SIZE];
+	char id[COMMAND_SIZE];
 
-	if(!regcomp(&dateHourRegex, DATE_HOUR_REGEX, REG_EXTENDED)){
+
+	if(regcomp(&dateHourRegex, DATE_HOUR_REGEX, REG_EXTENDED)){
 		perror("DateHourRegex \n");
 	}
 
-	if(!regcomp(&groupRegex, NEWNEWS_GROUP_REGEX, REG_EXTENDED)){
+	if(regcomp(&groupRegex, NEWNEWS_GROUP_REGEX, REG_EXTENDED)){
 		perror("GroupRegex \n");
 	}
 
@@ -232,10 +234,6 @@ CommandResponse newnews(char *command){
 	//Invalid group
 	group = strtok(NULL, " ");
 	if(regexec(&groupRegex, group, 0, NULL, 0) == REG_NOMATCH) sintaxError = true;
-
-	if(sintaxError){
-		printf("\n F por el regex del grupo \n");
-	}
 
 	//Invalid date
 	date = strtok(NULL, " ");
@@ -268,7 +266,7 @@ CommandResponse newnews(char *command){
 
 	//Get full route to get the group
 	strcpy(groupRoute, "../noticias/articulos");
-	strcpy(aux, "/"); strcat(aux, strtok(group,"."));
+	strcpy(aux, "/"); strcat(aux, strtok(strdup(group), "."));
 	strcat(groupRoute, aux);
 
 	while(NULL != (subgroup = strtok(NULL,"."))){
@@ -281,6 +279,7 @@ CommandResponse newnews(char *command){
 	if(groupDir){
 		closedir(groupDir);
 
+		//Search the group specified in the groups file and get the number of the last article in the group
 		if(NULL == (groupsFile = fopen("../noticias/grupos", "r"))){
 			comResp = (CommandResponse){-1, "Error"};
 			addCRLF(comResp.message, COMMAND_SIZE);
@@ -288,23 +287,91 @@ CommandResponse newnews(char *command){
 		}
 
 		while( fgets(aux, COMMAND_SIZE, groupsFile) ){
-			aux[strlen(aux) - 1] = '\0';
-			
-			
-					
+			if(strcmp(group, strtok(aux, " ")) == 0){
+				nLastArticle = atoi(strtok(NULL, " "));
+			}				
 		}
 
+		fclose(groupsFile);
+
+
+		//For each article, get the ones that are newer than the date specified
+		int j = 0;
+		for(int i = 1; i<= nLastArticle; i++){
+			strcpy(articleRoute, groupRoute);
+			sprintf(aux, "/%d", i);
+			strcat(articleRoute, aux);
+			
+			//Open the article and find the date
+			if(NULL == (articleFile = fopen(articleRoute, "r"))){
+				comResp = (CommandResponse){-1, "Error"};
+				addCRLF(comResp.message, COMMAND_SIZE);
+				return comResp;
+			}
+
+			while(fgets(aux, COMMAND_SIZE, articleFile)){
+				removeCRLF(aux);
+				rowName = strtok(aux, ":");
+
+				if(strcmp("Subject", rowName) == 0){
+					strcpy(subject, strtok(NULL, ":") + 1); //+1 to remove first space								
+				}
+				else if(strcmp("Date", rowName) == 0){
+					aux2 = strtok(NULL, ":");
+					adate = strtok(aux2, " ");
+					ahour = strtok(NULL, " ");
+
+					ayear = atoi(adate)/10000;
+					amonth = (atoi(adate) % 10000) / 100;
+					aday = atoi(adate) % 100;
+				
+					ahours = atoi(ahour)/10000;
+					amin = (atoi(ahour) % 10000) / 100;
+					asec = atoi(ahour) % 100;	
+				}
+				else if(strcmp("Message-ID", rowName) == 0){
+					strcpy(id, strtok(NULL, ":") + 1); //+1 to remove first space				
+					break;	
+				}
+			}
+
+			sprintf(aux, "%d - %s - %s", i, id, subject);
+
+			//Creation date is greater or creation date is the same but hour is greatter
+			if(DATE(ayear,amonth,aday)>DATE(year,month,day) || 
+			  (DATE(ayear,amonth,aday)==DATE(year,month,day) && HOUR(ahours,amin,asec)>HOUR(hours,min,sec)) ){
+
+				REALLOC_SV( (*articlesMatched), (*nArticles), (*nArticles + 1) )
+				(*nArticles)++;
+
+				(*articlesMatched)[j] = malloc(COMMAND_SIZE * sizeof(char));
+				
+				strcpy( (*articlesMatched)[j] , aux);
+				addCRLF((*articlesMatched)[j], COMMAND_SIZE);
+
+				j++;
+			}				
+
+			fclose(articleFile);
+		}
+
+		//Add . to finish emision
+		REALLOC_SV( (*articlesMatched), (*nArticles), (*nArticles + 1) )
+		(*nArticles)++;
+		(*articlesMatched)[j] = malloc(COMMAND_SIZE * sizeof(char));
+		strcpy( (*articlesMatched)[j] , ".");
+		addCRLF((*articlesMatched)[j], COMMAND_SIZE);
 
 		comResp = (CommandResponse){230, ""};
 		sprintf(comResp.message, "230 Nuevos articulos desde %02d/%02d/%02d %02d:%02d:%02d.",day, month, year, hours, min, sec);
 		addCRLF(comResp.message, COMMAND_SIZE);
-		return comResp;
 	}
 	//Directory does not exist
 	else{
 		comResp = (CommandResponse){411, "411 No existe ese grupo de noticias."};
 		addCRLF(comResp.message, COMMAND_SIZE);
 	}
+
 
 	return comResp;
 } 

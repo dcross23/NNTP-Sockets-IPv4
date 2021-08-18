@@ -132,7 +132,7 @@ int clienttcp(char** argv)
 			exit(1);
 		}
 		
-		printf("\nC:\"%s\"\n", command);
+		printf("\n\033[1;36mC:\"%s\"\033[0m\n", command);
 
 		RESET(response, COMMAND_SIZE);
 		
@@ -235,6 +235,30 @@ int clienttcp(char** argv)
 				}
 				
 				printf("S: %s\n", response);
+
+				if(RESP_200(GET_CODE(response))){
+					printf("  (Numero - ID - Tema)\n");
+
+					while(1){
+						RESET(response, COMMAND_SIZE);
+					
+						if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+							perror(argv[0]);
+							fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
+							exit(1);
+						}
+						
+						
+						if(removeCRLF(response)){
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							exit(1);
+						}
+						
+						if(FINISH_RESP(response)) break;
+						
+						printf("S: %s\n", response);
+					}
+				}
 				break;
 				
 			case GROUP:
