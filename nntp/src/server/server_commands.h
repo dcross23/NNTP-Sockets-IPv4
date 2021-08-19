@@ -76,7 +76,8 @@ CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles);
 /**
  * GROUP:
  * @param group
- * 
+ * Selects the group specified for ARTICLE, HEAD and BODY commands and sends to the client
+ *  the number of articles and the number of first and last articles.
  */
 CommandResponse group(char *command, bool *isGroupSelected, char *groupSelected);
 

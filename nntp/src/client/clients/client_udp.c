@@ -183,7 +183,7 @@ int clientudp(char **argv)
 		
 		RESET(response, COMMAND_SIZE);
 		
-		printf("\nC:\"%s\"\n", command);	
+		printf("\n\033[1;36mC:\"%s\"\033[0m\n", command);	
 		
 		switch(checkCommand(command)){
 			case LIST:		
@@ -304,6 +304,20 @@ int clientudp(char **argv)
 				break;
 				
 			case GROUP:
+				//Received response
+				if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+					perror(argv[0]);
+					fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+				
+				printf("S: %s\n", response);
 				break;
 			
 			case ARTICLE:
@@ -336,7 +350,7 @@ int clientudp(char **argv)
 
  /* Print message indicating completion of task. */
 	time(&timevar);
-	printf("[UDP] All done at %s", (char *)ctime(&timevar));
+	printf("\n[UDP] All done at %s", (char *)ctime(&timevar));
 }
 
 
