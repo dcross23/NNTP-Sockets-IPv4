@@ -555,8 +555,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 					errout(hostname);
 
 				if(RESP_200(comResp.code)){
-					//Send articles list that had matched. Last group is not a group, is ".". 
-					// This is needed for the client to know when the list of groups has finished.
+					//Send info of the article
 					for(i=0; i<nLines; i++){
 						if (send(s, articleInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
 							errout(hostname);	
@@ -574,8 +573,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 					errout(hostname);
 
 				if(RESP_200(comResp.code)){
-					//Send articles list that had matched. Last group is not a group, is ".". 
-					// This is needed for the client to know when the list of groups has finished.
+					//Send head of the article
 					for(i=0; i<nLines; i++){
 						if (send(s, headInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
 							errout(hostname);	
@@ -699,6 +697,9 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	//ARTICLE
 	char **articleInfo = NULL;
 	int nLines;
+
+	//HEAD
+	char **headInfo = NULL;
 
 				
 	/* Look up the host information for the remote host
@@ -841,8 +842,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 					errout(hostname);
 
 				if(RESP_200(comResp.code)){
-					//Send articles list that had matched. Last group is not a group, is ".". 
-					// This is needed for the client to know when the list of groups has finished.
+					//Send info of the article
 					for(i=0; i<nLines; i++){
 						if (sendto(s, articleInfo[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 							errout(hostname);
@@ -852,6 +852,20 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				
 			case HEAD:
 				fprintf(fd, "%-16s -> %s\n","Comand HEAD:" , command);
+
+				nLines = 0;
+				comResp = head(command, isGroupSelected, groupSelected, &headInfo, &nLines);
+
+				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
+
+				if(RESP_200(comResp.code)){
+					//Send head of the article
+					for(i=0; i<nLines; i++){
+						if (sendto(s, headInfo[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+							errout(hostname);	
+					}		
+				}
 				break;
 			
 			case BODY:
