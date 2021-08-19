@@ -13,7 +13,7 @@
 
 //REGEX
 static const char DATE_HOUR_REGEX[] = "^[0-9]{6}$";
-static const char NEWNEWS_GROUP_REGEX[] = "^[^\.](.+)\.((.+)\.)*(.*)[^\.]$";
+static const char GROUP_REGEX[] = "^[^\\.](.+)\\.((.+)\\.)*(.*)[^\\.]$";
 
 
 /**
@@ -71,5 +71,13 @@ CommandResponse newgroups(char *command, char ***groupsMatched, int *nGroups);
  */
 CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles);
 
+
+
+/**
+ * GROUP:
+ * @param group
+ * 
+ */
+CommandResponse group(char *command, bool *isGroupSelected, char *groupSelected);
 
 #endif

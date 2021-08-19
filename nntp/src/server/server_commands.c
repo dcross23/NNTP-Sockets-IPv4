@@ -224,7 +224,7 @@ CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles){
 		perror("DateHourRegex \n");
 	}
 
-	if(regcomp(&groupRegex, NEWNEWS_GROUP_REGEX, REG_EXTENDED)){
+	if(regcomp(&groupRegex, GROUP_REGEX, REG_EXTENDED)){
 		perror("GroupRegex \n");
 	}
 
@@ -289,6 +289,7 @@ CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles){
 		while( fgets(aux, COMMAND_SIZE, groupsFile) ){
 			if(strcmp(group, strtok(aux, " ")) == 0){
 				nLastArticle = atoi(strtok(NULL, " "));
+				break;
 			}				
 		}
 
@@ -376,6 +377,100 @@ CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles){
 	return comResp;
 } 
 
+
+
+/**
+ * GROUP command
+ */
+CommandResponse group(char *command, bool *isGroupSelected, char *groupSelected){
+	CommandResponse comResp;
+	FILE *groupsFile;
+	DIR *groupDir;
+	char groupRoute[COMMAND_SIZE];
+	char aux[COMMAND_SIZE];
+
+	char *group, *subgroup;
+	int firstArticle, lastArticle;
+	bool sintaxError = false;
+	regex_t groupRegex;
+
+
+	if(regcomp(&groupRegex, GROUP_REGEX, REG_EXTENDED)){
+		perror("GroupRegex \n");
+	}	
+
+	strtok(command, " "); //Discards 'GROUP' (name of the command)
+	
+	//Invalid group
+	group = strtok(NULL, " ");
+	if(regexec(&groupRegex, group, 0, NULL, 0) == REG_NOMATCH) sintaxError = true;
+
+	//Invalid number of arguments
+	if(strtok(NULL, " ") != NULL) sintaxError = true;
+
+	if(sintaxError){
+		comResp = (CommandResponse){501, "501 Error de sintaxis en GROUP newsgroup."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		*isGroupSelected = false;
+		strcpy(groupSelected, group);
+		return comResp;
+	}
+
+
+	//Sintax is correct, now parse command
+	//Get full route to get the group
+	strcpy(groupRoute, "../noticias/articulos");
+	strcpy(aux, "/"); strcat(aux, strtok(strdup(group), "."));
+	strcat(groupRoute, aux);
+
+	while(NULL != (subgroup = strtok(NULL,"."))){
+		strcat(groupRoute, "/");
+		strcat(groupRoute, subgroup);
+	}
+
+	groupDir = opendir(groupRoute);
+	//Directory exists
+	if(groupDir){
+		closedir(groupDir);
+
+		//Search the group specified in the groups file
+		if(NULL == (groupsFile = fopen("../noticias/grupos", "r"))){
+			comResp = (CommandResponse){-1, "Error"};
+			addCRLF(comResp.message, COMMAND_SIZE);
+			return comResp;
+		}
+
+		while( fgets(aux, COMMAND_SIZE, groupsFile) ){
+			if(strcmp(group, strtok(aux, " ")) == 0){
+				lastArticle = atoi(strtok(NULL, " "));
+				firstArticle = atoi(strtok(NULL, " "));
+				break;
+			}				
+		}
+
+		fclose(groupsFile);
+
+		comResp = (CommandResponse){211, ""};
+		if(lastArticle < firstArticle)
+			sprintf(comResp.message, "211 %d %010d %010d %s", 0, firstArticle, lastArticle, group);	
+		else
+			sprintf(comResp.message, "211 %d %010d %010d %s", lastArticle-firstArticle+1, firstArticle, lastArticle, group);
+		
+		addCRLF(comResp.message, COMMAND_SIZE);
+		*isGroupSelected = true;
+		strcpy(groupSelected, group);
+	}
+	//Directory does not exist
+	else{
+		comResp = (CommandResponse){411, "411 No existe ese grupo de noticias."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		
+		*isGroupSelected = false;
+		strcpy(groupSelected, group);
+	}
+
+	return comResp;
+}
 
 
 

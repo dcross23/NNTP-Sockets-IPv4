@@ -370,6 +370,11 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	//NEWNEWS
 	char **articlesMatched = NULL;
 	int nArticles;
+
+	//GROUP
+	bool isGroupSelected = false;
+	char groupSelected[COMMAND_SIZE];
+
 	
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
@@ -525,6 +530,12 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				
 			case GROUP:
 				fprintf(fd, "%-16s -> %s\n","Comand GROUP:" , command);
+
+				isGroupSelected = false;
+				comResp = group(command, &isGroupSelected, groupSelected);
+
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
 				break;
 			
 			case ARTICLE:
@@ -643,6 +654,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	//NEWNEWS
 	char **articlesMatched = NULL;
 	int nArticles;
+
 				
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
