@@ -100,4 +100,13 @@ CommandResponse article(char *command, bool isGroupSelected, char *groupSelected
  */
 CommandResponse head(char *command, bool isGroupSelected, char *groupSelected, char ***headInfo, int *nLines);
 
+
+
+/**
+ * BODY:
+ * @param article
+ * Allows the client to check the body of a specific article.
+ */
+CommandResponse body(char *command, bool isGroupSelected, char *groupSelected, char ***bodyInfo, int *nLines);
+
 #endif

@@ -382,6 +382,9 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	//HEAD
 	char **headInfo = NULL;
 
+	//BODY
+	char **bodyInfo = NULL;
+
 	
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
@@ -583,6 +586,20 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			
 			case BODY:
 				fprintf(fd, "%-16s -> %s\n","Comand BODY:" , command);
+
+				nLines = 0;
+				comResp = body(command, isGroupSelected, groupSelected, &bodyInfo, &nLines);
+
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
+
+				if(RESP_200(comResp.code)){
+					//Send head of the article
+					for(i=0; i<nLines; i++){
+						if (send(s, bodyInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
+							errout(hostname);	
+					}		
+				}
 				break;
 			
 			case POST:
