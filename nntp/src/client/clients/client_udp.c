@@ -183,7 +183,7 @@ int clientudp(char **argv)
 		
 		RESET(response, COMMAND_SIZE);
 		
-		printf("\n\033[1;36mC:\"%s\"\033[0m\n", command);	
+		printf("\n\033[1;36mC: %s\033[0m\n", command);
 		
 		switch(checkCommand(command)){
 			case LIST:		
@@ -199,7 +199,7 @@ int clientudp(char **argv)
 				}
 				
 				//Print response
-				printf("S: %s\n", response);
+				printf("\033[0;32mS: %s\033[0m\n", response);
 				
 				//Check response code
 				if(RESP_200(GET_CODE(response))){
@@ -238,7 +238,7 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("S: %s\n", response);
+				printf("\033[0;32mS: %s\033[0m\n", response);
 
 				//Check response code
 				if(RESP_200(GET_CODE(response))){
@@ -277,7 +277,7 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("S: %s\n", response);
+				printf("\033[0;32mS: %s\033[0m\n", response);
 
 				if(RESP_200(GET_CODE(response))){
 					printf("  (Numero - ID - Tema)\n");
@@ -292,7 +292,7 @@ int clientudp(char **argv)
 						}
 												
 						if(removeCRLF(response)){
-							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
 							exit(1);
 						}
 						
@@ -317,10 +317,46 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("S: %s\n", response);
+				printf("\033[0;32mS: %s\033[0m\n", response);
 				break;
 			
 			case ARTICLE:
+				//Received response
+				if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+					perror(argv[0]);
+					fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+				
+				printf("\033[0;32mS: %s\033[0m\n", response);
+
+				if(RESP_200(GET_CODE(response))){
+					while(1){
+						RESET(response, COMMAND_SIZE);
+					
+						if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+							perror(argv[0]);
+							fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+							exit(1);
+						}
+
+												
+						if(removeCRLF(response)){
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							exit(1);
+						}
+						
+						if(FINISH_RESP(response)) break;
+						
+						printf("S: %s\n", response);
+					}
+				}
 				break;
 				
 			case HEAD:
