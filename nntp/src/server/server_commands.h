@@ -87,8 +87,17 @@ CommandResponse group(char *command, bool *isGroupSelected, char *groupSelected)
 /**
  * ARTICLE:
  * @param article
- * Allows the client to check an specific article.
+ * Allows the client to check a specific article.
  */
 CommandResponse article(char *command, bool isGroupSelected, char *groupSelected, char ***articleInfo, int *nLines);
+
+
+
+/**
+ * HEAD:
+ * @param article
+ * Allows the client to check the header of a specific article.
+ */
+CommandResponse head(char *command, bool isGroupSelected, char *groupSelected, char ***headInfo, int *nLines);
 
 #endif

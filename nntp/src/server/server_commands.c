@@ -486,7 +486,7 @@ CommandResponse article(char *command, bool isGroupSelected, char *groupSelected
 	char *row;
 
 	char *article, *subgroup;
-	char id[50];
+	char id[COMMAND_SIZE];
 	int numArticle, firstArticle, lastArticle, i;
 	bool sintaxError = false;
 	regex_t articleRegex;
@@ -600,6 +600,137 @@ CommandResponse article(char *command, bool isGroupSelected, char *groupSelected
 }
 
 
+
+/**
+ * HEAD command
+ */
+CommandResponse head(char *command, bool isGroupSelected, char *groupSelected, char ***headInfo, int *nLines){
+	CommandResponse comResp;
+	FILE *articleFile, *groupsFile;
+	char articleRoute[COMMAND_SIZE], groupRoute[COMMAND_SIZE];
+	char aux[COMMAND_SIZE];
+	char *row;
+
+	char *article, *subgroup;
+	char id[COMMAND_SIZE];
+	int numArticle, firstArticle, lastArticle, i;
+	bool sintaxError = false;
+	regex_t articleRegex;
+
+	//Checks if a group has been selected previously.
+	if(!isGroupSelected){
+		comResp = (CommandResponse){430, "430 No se encuenta el articulo. No hay grupo seleccionado."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+
+	//If a group is selected checks if command is ok
+	if(regcomp(&articleRegex, ARTICLE_REGEX, REG_EXTENDED)){
+		perror("ArticleRegex \n");
+	}	
+
+	strtok(command, " "); //Discards 'ARTICLE' (name of the command)
+	
+	//Invalid group
+	article = strtok(NULL, " ");
+	if(regexec(&articleRegex, article, 0, NULL, 0) == REG_NOMATCH) sintaxError = true;
+
+	//Invalid number of arguments
+	if(strtok(NULL, " ") != NULL) sintaxError = true;
+
+	if(sintaxError){
+		comResp = (CommandResponse){501, "501 Error de sintaxis en ARTICLE article."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+
+
+	//Sintax is correct, now parse command
+	numArticle = atoi(article);
+
+	//Search the group specified in the groups file (this can be omited if store group info) 
+	// and get group route
+	if(NULL == (groupsFile = fopen("../noticias/grupos", "r"))){
+		comResp = (CommandResponse){-1, "Error"};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+
+	while( fgets(aux, COMMAND_SIZE, groupsFile) ){
+		if(strcmp(groupSelected, strtok(aux, " ")) == 0){
+			lastArticle = atoi(strtok(NULL, " "));
+			firstArticle = atoi(strtok(NULL, " "));
+			break;
+		}				
+	}
+	fclose(groupsFile);
+	
+	strcpy(groupRoute, "../noticias/articulos");
+	strcpy(aux, "/"); strcat(aux, strtok(strdup(groupSelected), "."));
+	strcat(groupRoute, aux);
+
+	while(NULL != (subgroup = strtok(NULL,"."))){
+		strcat(groupRoute, "/");
+		strcat(groupRoute, subgroup);
+	}
+
+	//Check if the number of the article is in the group
+	//There are no articles in the group
+	if(lastArticle < firstArticle){
+		comResp = (CommandResponse){423, "423 No existe el articulo en este grupo de noticias."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+	
+	}
+	//There are articles in the group but no one matches with the selected one
+	else if(numArticle>lastArticle || numArticle<firstArticle){
+		comResp = (CommandResponse){423, "423 No existe el articulo en este grupo de noticias."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+	}
+	//Article is in the group
+	else{
+		sprintf(articleRoute, "%s/%d", groupRoute, numArticle);
+
+		if(NULL == (articleFile = fopen(articleRoute, "r"))){
+			comResp = (CommandResponse){-1, "Error"};
+			addCRLF(comResp.message, COMMAND_SIZE);
+			return comResp;
+		}
+
+		i = 0;
+		while( fgets(aux, COMMAND_SIZE, articleFile) ){
+			removeCRLF(aux);
+
+			if(aux[0] == '\0') break;
+
+			REALLOC_SV( (*headInfo), (*nLines), (*nLines + 1) )
+			(*nLines)++;
+			(*headInfo)[i] = malloc(COMMAND_SIZE * sizeof(char));			
+			strcpy( (*headInfo)[i] , aux);
+			addCRLF((*headInfo)[i], COMMAND_SIZE);
+			i++;
+
+			if(aux[0] == '.') break;
+
+			row = strtok(aux, ":");
+			if(strcmp("Message-ID", row) == 0){
+				strcpy(id, strtok(NULL, ":") + 1); //+1 to remove first space	
+			}	
+		}
+		fclose(articleFile);
+
+		REALLOC_SV( (*headInfo), (*nLines), (*nLines + 1) )
+		(*nLines)++;
+		(*headInfo)[i] = malloc(COMMAND_SIZE * sizeof(char));
+		strcpy( (*headInfo)[i] , ".");
+		addCRLF((*headInfo)[i], COMMAND_SIZE);
+
+		comResp = (CommandResponse){221, ""};
+		sprintf(comResp.message,"221 %d %s cabecera del articulo recuperada.", numArticle, id);
+		addCRLF(comResp.message, COMMAND_SIZE);
+	}
+
+	return comResp;
+}
 
 
 
