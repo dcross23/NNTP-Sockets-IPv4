@@ -375,6 +375,10 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	bool isGroupSelected = false;
 	char groupSelected[COMMAND_SIZE];
 
+	//ARTICLE
+	char **articleInfo = NULL;
+	int nLines;
+
 	
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
@@ -540,6 +544,21 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			
 			case ARTICLE:
 				fprintf(fd, "%-16s -> %s\n","Comand ARTICLE:" , command);
+
+				nLines = 0;
+				comResp = article(command, isGroupSelected, groupSelected, &articleInfo, &nLines);
+
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
+
+				if(RESP_200(comResp.code)){
+					//Send articles list that had matched. Last group is not a group, is ".". 
+					// This is needed for the client to know when the list of groups has finished.
+					for(i=0; i<nLines; i++){
+						if (send(s, articleInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
+							errout(hostname);	
+					}		
+				}
 				break;
 				
 			case HEAD:

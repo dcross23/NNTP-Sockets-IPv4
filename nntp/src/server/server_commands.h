@@ -14,6 +14,7 @@
 //REGEX
 static const char DATE_HOUR_REGEX[] = "^[0-9]{6}$";
 static const char GROUP_REGEX[] = "^[^\\.](.+)\\.((.+)\\.)*(.*)[^\\.]$";
+static const char ARTICLE_REGEX[] = "^[0-9]+$";
 
 
 /**
@@ -80,5 +81,14 @@ CommandResponse newnews(char *command, char ***articlesMatched, int *nArticles);
  *  the number of articles and the number of first and last articles.
  */
 CommandResponse group(char *command, bool *isGroupSelected, char *groupSelected);
+
+
+
+/**
+ * ARTICLE:
+ * @param article
+ * Allows the client to check an specific article.
+ */
+CommandResponse article(char *command, bool isGroupSelected, char *groupSelected, char ***articleInfo, int *nLines);
 
 #endif
