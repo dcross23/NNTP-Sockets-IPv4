@@ -758,6 +758,10 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	//BODY
 	char **bodyInfo = NULL;
 
+	//POST
+	char **postInfo = NULL;
+	char line[COMMAND_SIZE];
+
 				
 	/* Look up the host information for the remote host
 	 * that we have connected with.  Its internet address
@@ -945,6 +949,43 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 			
 			case POST:
 				fprintf(fd, "%-16s -> %s\n","Comand POST:" , command);
+
+				//Receives the info that is going to be posted
+				nLines = 0;
+				while(1){	
+					n_retry = RETRIES;
+					while(n_retry > 0){
+						alarm(TIMEOUT);
+						if (recvfrom(s, line, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, &addrlen) == -1) {
+							if (errno == EINTR) {
+								fprintf(stderr,"[SERV UDP] Alarm went off.\n");
+								n_retry--; 
+							} else  {
+								fprintf(stderr,"[SERV UDP] Unable to get response to \"connect\"\n");
+								exit(1); 
+							}
+						}else{
+							alarm(0);
+							break;
+						}
+					}
+					if(n_retry == 0) break; 
+
+					line[strlen(line)-2] = '\0';
+
+					REALLOC_SV( postInfo, nLines, (nLines + 1) )
+					postInfo[nLines] = malloc(COMMAND_SIZE * sizeof(char));	
+					strcpy(postInfo[nLines], line);
+					nLines++;
+
+					if(line[0] == '.')break; 
+				}
+
+				//Creates and stores the post
+				comResp = post(postInfo, nLines, hostname);
+
+				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
 				break;
 							
 			case QUIT:

@@ -10,7 +10,7 @@ HEAD 1
 BODY 1
 
 POST
-Newsgroups: nuevo.grupo.
+Newsgroups: nuevo.grupo
 Subject: Nuevo grupo
 
 Este es un nuevo grupo :D

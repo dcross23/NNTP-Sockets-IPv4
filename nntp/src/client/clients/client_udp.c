@@ -166,8 +166,14 @@ int clientudp(char **argv)
 	
 	RESET(command, COMMAND_SIZE);
 	while( fgets(command, sizeof(command), commandsFile) != NULL){
-	
-		command[strlen(command) - 2] = '\0';
+		if(removeCRLF(command)){
+			fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"conexion\" \n");
+			exit(1);
+		}
+
+		if(command[0] == '\0') 
+			continue;
+			
 		addCRLF(command, COMMAND_SIZE);
 	
 		if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
@@ -177,7 +183,7 @@ int clientudp(char **argv)
 		}
 		
 		if(removeCRLF(command)){
-			fprintf(stderr, "[UDP]Command without CR-LF. Aborted \"conexion\" \n");
+			fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"conexion\" \n");
 			exit(1);
 		}
 		
@@ -438,6 +444,30 @@ int clientudp(char **argv)
 				break;
 			
 			case POST:
+				while( fgets(command, sizeof(command), commandsFile) != NULL){
+					if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
+						fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
+						fprintf(stderr, "on send number %d\n", i);
+						exit(1);
+					}
+
+					if(command[0] == '.'){
+						break;	
+					}					
+				}
+
+				if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+					perror(argv[0]);
+					fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+										
+				if(removeCRLF(response)){
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+
+				printf("\033[0;32mS: %s\033[0m\n", response);
 				break;
 							
 			case QUIT:
