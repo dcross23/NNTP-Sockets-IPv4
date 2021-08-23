@@ -874,3 +874,177 @@ CommandResponse body(char *command, bool isGroupSelected, char *groupSelected, c
 
 
 
+/**
+ * POST command
+ */
+CommandResponse post(char **postInfo, int nLines, char *hostname){
+	CommandResponse comResp;
+	FILE *groupFile, *groupsFile, *nArticlesFile, *articleFile;
+
+	char groupRoute[COMMAND_SIZE], articleRoute[COMMAND_SIZE];
+	char aux[COMMAND_SIZE];
+	char *group, *subgroup, *subject;
+	int newLastGroup, nArticles, i;
+	bool error = false, groupExists;
+	regex_t groupRegex;
+	struct tm *timeinfo;
+	long timevar;
+	char date[20];
+
+
+	if(regcomp(&groupRegex, GROUP_REGEX, REG_EXTENDED)){
+		perror("GroupRegex \n");
+	}
+
+	//Check if there are 5 lines at least
+	if(nLines < 5) error = true;
+
+	//Check if first line is "Newsgroup" and if the sintax is correct
+	if(!error && strcmp(strtok(postInfo[0], ":"), "Newsgroups") == 0){
+		group = strtok(NULL, ":")+1;  //+1 to remove blank space
+		if(regexec(&groupRegex, group, 0, NULL, 0) == REG_NOMATCH) 
+			error = true;
+	}else
+		error = true;
+
+	//Check if second line is "Subject" and if the sintax is correct
+	if(!error && strcmp(strtok(postInfo[1], ":"), "Subject") == 0){
+		subject = strtok(NULL, ":")+1;  //+1 to remove blank space
+	}else
+		error = true;
+
+	//Check if third line is blank
+	if(!error && strcmp(postInfo[2], "") != 0){
+		error = true;
+	}
+
+	//Fourth and later lines are the body except the last one. 
+
+	//Check if last line is "." 
+	if(!error && strcmp(postInfo[nLines-1], ".") != 0){
+		error = true;
+	}	
+
+	if(error){
+		comResp = (CommandResponse){441, "441 No se ha podido subir el articulo."};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+
+
+	//Everything is correct
+	strcpy(groupRoute, "../noticias/articulos");
+	strcat(groupRoute, "/"); strcat(groupRoute, strtok(strdup(group), "."));
+
+	if(opendir(groupRoute)){
+		while(NULL != (subgroup = strtok(NULL,"."))){
+			strcat(groupRoute, "/");
+			strcat(groupRoute, subgroup);
+
+			if(!opendir(groupRoute)){
+				mkdir(groupRoute, 0770);
+			}
+		}
+	
+	}else{
+		mkdir(groupRoute, 0770);
+		while(NULL != (subgroup = strtok(NULL,"."))){
+			strcat(groupRoute, "/");
+			strcat(groupRoute, subgroup);
+			mkdir(groupRoute, 0770);			
+		}
+	}
+
+	//Creates a new group in the "groups" file or modifies an existing one
+	if(NULL == (groupsFile = fopen("../noticias/grupos", "r+"))){
+		comResp = (CommandResponse){-1, "Error"};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+
+	groupExists = false;
+	while(fgets(aux, COMMAND_SIZE, groupsFile)){
+		if(strcmp(group, strtok(strdup(aux), " ")) == 0){
+			newLastGroup = atoi(strtok(NULL, " ")) + 1;
+			groupExists = true;
+			fseek(groupsFile, -strlen(aux), SEEK_CUR);	
+			fprintf(groupsFile, "%s %010d", group, newLastGroup);	
+		}
+	}
+
+	if(!groupExists){
+		fseek(groupsFile, 0, SEEK_END);	
+		time(&timevar);
+		timeinfo = localtime(&timevar);
+		newLastGroup = 1;
+		fprintf(groupsFile,"%s %010d %010d %02d%02d%02d %02d%02d%02d Nuevo\r\n",
+			group, 1, 1, 
+			(timeinfo->tm_year+1900)%100, timeinfo->tm_mon+1, timeinfo->tm_mday,
+			timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+	}
+
+	fclose(groupsFile);
+
+
+	//Increment number of articles in n_articulos or creates the file if there is no article registered
+	if (access("../noticias/n_articulos", F_OK) == 0){
+		if(NULL == (nArticlesFile = fopen("../noticias/n_articulos", "r+"))){
+			comResp = (CommandResponse){-1, "Error"};
+			addCRLF(comResp.message, COMMAND_SIZE);
+			return comResp;
+		}
+
+		fscanf(nArticlesFile, "%d", &nArticles);
+		fseek(nArticlesFile, 0, SEEK_SET);
+		nArticles++;
+		fprintf(nArticlesFile, "%d\r\n", nArticles);
+	
+	}else{
+		if(NULL == (nArticlesFile = fopen("../noticias/n_articulos", "w"))){
+			comResp = (CommandResponse){-1, "Error"};
+			addCRLF(comResp.message, COMMAND_SIZE);
+			return comResp;
+		}
+
+		nArticles = 1;
+		fprintf(nArticlesFile, "%d\r\n", nArticles);
+	}
+	fclose(nArticlesFile);
+
+
+	//Creates the new article
+	sprintf(articleRoute, "%s/%d", groupRoute, newLastGroup);
+	if(NULL == (articleFile = fopen(articleRoute, "w"))){
+		comResp = (CommandResponse){-1, "Error"};
+		addCRLF(comResp.message, COMMAND_SIZE);
+		return comResp;
+	}
+
+	fprintf(articleFile, "Newsgroups: %s\r\n", group);
+	fprintf(articleFile, "Subject: %s\r\n", subject);
+
+	//Generates "Date"
+	time(&timevar);
+	timeinfo = localtime(&timevar);
+	strcpy(date, (char *)ctime(&timevar));
+	date[(int)strlen(date)-1] = '\0';
+
+	fprintf(articleFile,"Date: %02d%02d%02d %02d%02d%02d %s +%lds(%s)\r\n", 
+		(timeinfo->tm_year+1900)%100, timeinfo->tm_mon+1, timeinfo->tm_mday,
+		timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
+		date, timeinfo->tm_gmtoff, timeinfo->tm_zone
+		);
+		
+	//Generates "Message-ID"
+	fprintf(articleFile, "Message-ID: <%d@%s>\r\n",nArticles, hostname);
+
+	for(i=2; i<nLines; i++){
+		fprintf(articleFile, "%s\r\n", postInfo[i]);
+	}
+
+	fclose(articleFile);
+
+	comResp = (CommandResponse){240,"240 Articulo recibido correctamente"};
+	addCRLF(comResp.message, COMMAND_SIZE);
+	return comResp;
+}

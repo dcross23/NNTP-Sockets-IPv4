@@ -8,4 +8,12 @@ ARTICLE 4
 ARTICLE 1
 HEAD 1
 BODY 1
+
+POST
+Newsgroups: nuevo.grupo.
+Subject: Nuevo grupo
+
+Este es un nuevo grupo :D
+.
+
 QUIT

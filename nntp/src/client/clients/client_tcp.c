@@ -116,9 +116,15 @@ int clienttcp(char** argv)
 	}
 	
 	RESET(command, COMMAND_SIZE);
-	while( fgets(command, sizeof(command), commandsFile) != NULL){
-	
-		command[strlen(command) - 2] = '\0';
+	while( fgets(command, sizeof(command), commandsFile) != NULL){	
+		if(removeCRLF(command)){
+			fprintf(stderr, "[TCP] Command without CR-LF. Aborted \"conexion\" \n");
+			exit(1);
+		}
+
+		if(command[0] == '\0') 
+			continue;
+			
 		addCRLF(command, COMMAND_SIZE);
 		
 		if (send(s, command, COMMAND_SIZE, 0) != COMMAND_SIZE) {
@@ -396,6 +402,33 @@ int clienttcp(char** argv)
 				break;
 			
 			case POST:
+				while( fgets(command, sizeof(command), commandsFile) != NULL){
+					if (send(s, command, COMMAND_SIZE, 0) != COMMAND_SIZE) {
+						fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
+						fprintf(stderr, "on send number %d\n", i);
+						exit(1);
+					}	
+
+					if(command[0] == '.'){
+						break;	
+					}					
+				}
+
+				//Received response
+				if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+					perror(argv[0]);
+					fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+
+				printf("\033[0;32mS: %s\033[0m\n", response);
+				
 				break;
 							
 			case QUIT:

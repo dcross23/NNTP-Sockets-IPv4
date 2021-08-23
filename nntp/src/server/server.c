@@ -355,7 +355,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	struct linger linger;		/* allow a lingering, graceful close; */
 				    	/* used when setting SO_LINGER */
 			
-	int i;	
+	int i, j;	
 	char command[COMMAND_SIZE];
 	
 	CommandResponse comResp;
@@ -384,6 +384,10 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 
 	//BODY
 	char **bodyInfo = NULL;
+
+	//POST
+	char **postInfo = NULL;
+	char line[COMMAND_SIZE];
 
 	
 	/* Look up the host information for the remote host
@@ -604,6 +608,39 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			
 			case POST:
 				fprintf(fd, "%-16s -> %s\n","Comand POST:" , command);
+
+				//Receives the info that is going to be posted
+				nLines = 0;
+				while(i = recv(s, line, COMMAND_SIZE, 0)){	
+					if (i == -1){
+						fprintf(stderr, "[SERVER TCP] Error reading result\n");
+						exit(1);
+					}
+
+					while (i < COMMAND_SIZE) {
+						j = recv(s, &line[i], COMMAND_SIZE-i, 0);
+						if (j == -1){
+							fprintf(stderr, "[SERVER TCP] Error reading result\n");
+							exit(1);
+						}
+						i += j;
+					}
+
+					line[strlen(line)-2] = '\0';
+
+					REALLOC_SV( postInfo, nLines, (nLines + 1) )
+					postInfo[nLines] = malloc(COMMAND_SIZE * sizeof(char));	
+					strcpy(postInfo[nLines], line);
+					nLines++;
+
+					if(line[0] == '.')break; 
+				}
+
+				//Creates and stores the post
+				comResp = post(postInfo, nLines, hostname);
+
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
 				break;
 							
 			case QUIT:

@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <dirent.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "../params.h"
 
@@ -108,5 +110,13 @@ CommandResponse head(char *command, bool isGroupSelected, char *groupSelected, c
  * Allows the client to check the body of a specific article.
  */
 CommandResponse body(char *command, bool isGroupSelected, char *groupSelected, char ***bodyInfo, int *nLines);
+
+
+
+/**
+ * POST:
+ *
+ */
+CommandResponse post(char **postInfo, int nLines, char *hostname);
 
 #endif
