@@ -471,11 +471,33 @@ int clientudp(char **argv)
 				break;
 							
 			case QUIT:
-				printf("S:%s\n", "BYE :D");
+				if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+					perror(argv[0]);
+					fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+										
+				if(removeCRLF(response)){
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+
+				printf("\033[0;32mS: %s\033[0m\n", response);
 				break;
 				
 			default:
-				printf("S:%s\n", "Wrong command :D");
+				if(-1 == recvUDP(s, response, COMMAND_SIZE, &servaddr_in, &addrlen)){
+					perror(argv[0]);
+					fprintf(stderr, "[UDP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+										
+				if(removeCRLF(response)){
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+
+				printf("\033[0;32mS: %s\033[0m\n", response);
 			
 		}
 		

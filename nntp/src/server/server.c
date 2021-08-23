@@ -355,6 +355,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 	struct linger linger;		/* allow a lingering, graceful close; */
 				    	/* used when setting SO_LINGER */
 			
+	bool finish = false;
 	int i, j;	
 	char command[COMMAND_SIZE];
 	
@@ -441,9 +442,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 */
 		 
 		 
-	FILE* fd = fopen("../src/server/cTCP.txt", "w");
-	
-
 	//Main loop
 	while (len = recv(s, command, COMMAND_SIZE, 0)) {
 		if (len == -1) errout(hostname); /* error from recv */
@@ -476,8 +474,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 //--------	/* Command is ok, just works :D */
 		switch(checkCommand(command)){
 			case LIST:
-				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
-			
 				nGroups = 0;
 				//Process command (get groups)
 				comResp = list(&groupsInfo, &nGroups);
@@ -499,8 +495,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 
 
 			case NEWGROUPS:
-				fprintf(fd, "%-16s -> %s\n","Comand NEWGROUPS:" , command);
-
 				nGroups = 0;
 				//Process command (get groups that match)
 				comResp = newgroups(command, &groupsMatched, &nGroups);
@@ -522,8 +516,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 
 
 			case NEWNEWS:
-				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
-
 				nArticles = 0;
 				//Process command (get articles that match)
 				comResp = newnews(command, &articlesMatched, &nArticles);
@@ -543,8 +535,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				break;
 				
 			case GROUP:
-				fprintf(fd, "%-16s -> %s\n","Comand GROUP:" , command);
-
 				isGroupSelected = false;
 				comResp = group(command, &isGroupSelected, groupSelected);
 
@@ -553,8 +543,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case ARTICLE:
-				fprintf(fd, "%-16s -> %s\n","Comand ARTICLE:" , command);
-
 				nLines = 0;
 				comResp = article(command, isGroupSelected, groupSelected, &articleInfo, &nLines);
 
@@ -571,8 +559,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				break;
 				
 			case HEAD:
-				fprintf(fd, "%-16s -> %s\n","Comand HEAD:" , command);
-
 				nLines = 0;
 				comResp = head(command, isGroupSelected, groupSelected, &headInfo, &nLines);
 
@@ -589,8 +575,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case BODY:
-				fprintf(fd, "%-16s -> %s\n","Comand BODY:" , command);
-
 				nLines = 0;
 				comResp = body(command, isGroupSelected, groupSelected, &bodyInfo, &nLines);
 
@@ -607,8 +591,6 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case POST:
-				fprintf(fd, "%-16s -> %s\n","Comand POST:" , command);
-
 				//Receives the info that is going to be posted
 				nLines = 0;
 				while(i = recv(s, line, COMMAND_SIZE, 0)){	
@@ -644,17 +626,23 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				break;
 							
 			case QUIT:
-				fprintf(fd, "%-16s -> %s\n","Comand QUIT:" , command);
+				finish = true;
+				comResp = (CommandResponse) {205, "205 Despedida."};
+				addCRLF(comResp.message, COMMAND_SIZE);
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
 				break;
 				
 				
 			default:
-				fprintf(fd, "%-16s -> %s\n","Wrong command D:" , command);
+				comResp = (CommandResponse) {500, "500 Comando desconocido."};
+				addCRLF(comResp.message, COMMAND_SIZE);
+				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
 		}
-		
+
+		if(finish) break;		
 	}
-	
-	fclose(fd);
 
 		/* The loop has terminated, because there are no
 		 * more requests to be serviced.  As mentioned above,
@@ -786,9 +774,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 
 	
-	
-	FILE* fd = fopen("../src/server/cUDP.txt", "w");
-	
 	while (1) {
 		//Receives next command from the client
 		n_retry = RETRIES;
@@ -821,9 +806,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 		
 //--------	/* Command is ok, just works :D */
 		switch(checkCommand(command)){
-			case LIST:
-				fprintf(fd, "%-16s -> %s\n","Comand LIST:" , command);
-			
+			case LIST:			
 				nGroups = 0;
 				comResp = list(&groupsInfo, &nGroups);
 				
@@ -843,8 +826,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case NEWGROUPS:
-				fprintf(fd, "%-16s -> %s\n","Comand NEWGROUPS:" , command);
-
 				nGroups = 0;
 				//Process command (get groups that match)
 				comResp = newgroups(command, &groupsMatched, &nGroups);
@@ -863,8 +844,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case NEWNEWS:
-				fprintf(fd, "%-16s -> %s\n","Comand NEWNEWS:" , command);
-
 				nArticles = 0;
 				//Process command (get articles that match)
 				comResp = newnews(command, &articlesMatched, &nArticles);
@@ -884,8 +863,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 				
 			case GROUP:
-				fprintf(fd, "%-16s -> %s\n","Comand GROUP:" , command);
-
 				isGroupSelected = false;
 				comResp = group(command, &isGroupSelected, groupSelected);
 
@@ -894,8 +871,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case ARTICLE:
-				fprintf(fd, "%-16s -> %s\n","Comand ARTICLE:" , command);
-
 				nLines = 0;
 				comResp = article(command, isGroupSelected, groupSelected, &articleInfo, &nLines);
 
@@ -912,8 +887,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 				
 			case HEAD:
-				fprintf(fd, "%-16s -> %s\n","Comand HEAD:" , command);
-
 				nLines = 0;
 				comResp = head(command, isGroupSelected, groupSelected, &headInfo, &nLines);
 
@@ -930,8 +903,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case BODY:
-				fprintf(fd, "%-16s -> %s\n","Comand BODY:" , command);
-
 				nLines = 0;
 				comResp = body(command, isGroupSelected, groupSelected, &bodyInfo, &nLines);
 
@@ -948,8 +919,6 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case POST:
-				fprintf(fd, "%-16s -> %s\n","Comand POST:" , command);
-
 				//Receives the info that is going to be posted
 				nLines = 0;
 				while(1){	
@@ -971,7 +940,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 					}
 					if(n_retry == 0) break; 
 
-					line[strlen(line)-2] = '\0';
+					removeCRLF(line);
 
 					REALLOC_SV( postInfo, nLines, (nLines + 1) )
 					postInfo[nLines] = malloc(COMMAND_SIZE * sizeof(char));	
@@ -989,21 +958,23 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				break;
 							
 			case QUIT:
-				fprintf(fd, "%-16s -> %s\n","Comand QUIT:" , command);
 				finish = true;
+				comResp = (CommandResponse) {205, "205 Despedida."};
+				addCRLF(comResp.message, COMMAND_SIZE);
+				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
 				break;
 				
 				
 			default:
-				fprintf(fd, "%-16s -> %s\n","Wrong command D:" , command);
+				comResp = (CommandResponse) {500, "500 Comando desconocido."};
+				addCRLF(comResp.message, COMMAND_SIZE);
+				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
 		}
-		
 
-		if(strcmp(command, "QUIT") == 0 || finish)
-			break;
+		if(finish) break;
 	}
-	
-	fclose(fd);		
 
 	close(s);
 	

@@ -37,4 +37,3 @@ see:
 clean: stop
 	rm ../bin/*
 	cd client && make clean
-	cd server && make clean

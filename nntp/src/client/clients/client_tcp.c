@@ -432,11 +432,37 @@ int clienttcp(char** argv)
 				break;
 							
 			case QUIT:
-				printf("S:%s\n", "BYE :D");
+				//Received response
+				if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+					perror(argv[0]);
+					fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+
+				printf("\033[0;32mS: %s\033[0m\n", response);
 				break;
 				
 			default:
-				printf("S:%s\n", "Wrong command :D");
+				//Received response
+				if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+					perror(argv[0]);
+					fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					exit(1);
+				}
+
+				printf("\033[0;32mS: %s\033[0m\n", response);
 			
 		}
 		
