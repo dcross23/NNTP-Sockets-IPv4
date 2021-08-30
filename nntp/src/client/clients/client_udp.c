@@ -143,7 +143,7 @@ int clientudp(char **argv)
 	
 	
 	
-	/* Send a "false conexion" message to the UDP server listening socket (ls_UDP) */
+	/* Send a "false connection" message to the UDP server listening socket (ls_UDP) */
 	if (sendto (s, " ", 1,0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
 		perror(argv[0]);
 		fprintf(stderr, "%s: unable to send request to \"connect\" \n", argv[0]);
@@ -167,7 +167,7 @@ int clientudp(char **argv)
 	RESET(command, COMMAND_SIZE);
 	while( fgets(command, sizeof(command), commandsFile) != NULL){
 		if(removeCRLF(command)){
-			fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"conexion\" \n");
+			fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"connection\" \n");
 			exit(1);
 		}
 
@@ -183,7 +183,7 @@ int clientudp(char **argv)
 		}
 		
 		if(removeCRLF(command)){
-			fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"conexion\" \n");
+			fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"connection\" \n");
 			exit(1);
 		}
 		
@@ -200,7 +200,7 @@ int clientudp(char **argv)
 				
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"conexion\" \n");
+					fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"connection\" \n");
 					exit(1);
 				}
 				
@@ -219,7 +219,7 @@ int clientudp(char **argv)
 						}
 				
 						if(removeCRLF(response)){
-							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -240,7 +240,7 @@ int clientudp(char **argv)
 				
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -258,7 +258,7 @@ int clientudp(char **argv)
 						}						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -279,7 +279,7 @@ int clientudp(char **argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -298,7 +298,7 @@ int clientudp(char **argv)
 						}
 												
 						if(removeCRLF(response)){
-							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -319,7 +319,7 @@ int clientudp(char **argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -336,7 +336,7 @@ int clientudp(char **argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -354,7 +354,7 @@ int clientudp(char **argv)
 
 												
 						if(removeCRLF(response)){
-							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -375,7 +375,7 @@ int clientudp(char **argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -393,7 +393,7 @@ int clientudp(char **argv)
 
 												
 						if(removeCRLF(response)){
-							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -414,7 +414,7 @@ int clientudp(char **argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -432,7 +432,7 @@ int clientudp(char **argv)
 
 												
 						if(removeCRLF(response)){
-							fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -463,7 +463,7 @@ int clientudp(char **argv)
 				}
 										
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 
@@ -478,7 +478,7 @@ int clientudp(char **argv)
 				}
 										
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 
@@ -493,7 +493,7 @@ int clientudp(char **argv)
 				}
 										
 				if(removeCRLF(response)){
-					fprintf(stderr, "[UDP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[UDP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 

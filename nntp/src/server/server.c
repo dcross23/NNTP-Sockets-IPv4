@@ -216,9 +216,9 @@ int main(int argc, char **argv)
 								/* Close the listen socket inherited from the daemon. */
 								close(ls_TCP);
 
-								//Registers info of the new UDP "false conexion"
+								//Registers info of the new UDP "false connection"
 								if(-1 == addNewConexionToLog(myaddr_in, clientaddr_in, "TCP")){
-									perror("No se ha podido a�adir la conexion a nntpd.log");
+									perror("No se ha podido a�adir la connection a nntpd.log");
 								}	
 
 								//Starts up the server
@@ -247,19 +247,19 @@ int main(int argc, char **argv)
 					if (FD_ISSET(ls_UDP, &readmask)) {
 						/* This call will block until a new
 						* request arrives.  Then, it will create
-						* a false "TCP" conexion and working the same
+						* a false "TCP" connection and working the same
 						* as TCP works creating a new socket for that
-						* false conexion.
+						* false connection.
 						*/
 						br = recvfrom(ls_UDP, buffer, 1, 0, (struct sockaddr *)&clientaddr_in, &addrlen);
 						if ( br == -1) {
 						    perror(argv[0]);
-						    printf("%s: recvfrom error (failed false conexion UDP)\n", argv[0]);
+						    printf("%s: recvfrom error (failed false connection UDP)\n", argv[0]);
 						    exit(1);
 						}
 						
 						/* When a new client sends a UDP datagram, his information is stored
-						* in "clientaddr_in", so we can create a false conexion by sending messages
+						* in "clientaddr_in", so we can create a false connection by sending messages
 						* manually with this information
 						*/
 						s_UDP = socket(AF_INET, SOCK_DGRAM, 0);
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 							exit(1);
 						}
 						
-						/* As well as its done in TCP, a new thread is created for that false conexion */
+						/* As well as its done in TCP, a new thread is created for that false connection */
 						switch (fork()) {
 							case -1:	
 								exit(1);
@@ -294,7 +294,7 @@ int main(int argc, char **argv)
 					    		close(ls_UDP); 
 					    			
 					    		/* Sends a message to the client for him to know the new port for 
-								 * the false conexion
+								 * the false connection
 					    		 */
 					    		if (sendto(s_UDP, " ", 1, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) {
 									perror(argv[0]);
@@ -302,9 +302,9 @@ int main(int argc, char **argv)
 									exit(1);
 								}
 
-								//Registers info of the new UDP "false conexion"
+								//Registers info of the new UDP "false connection"
 								if(-1 == addNewConexionToLog(myaddr_in, clientaddr_in, "UDP")){
-									perror("No se ha podido a�adir la conexion a nntpd.log");
+									perror("No se ha podido a�adir la connection a nntpd.log");
 								}	
 								
 								//Starts up the server									
@@ -479,7 +479,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 
 
 		if(removeCRLF(command)){
-			fprintf(stderr, "Command without CR-LF. Aborted conexion\n");
+			fprintf(stderr, "Command without CR-LF. Aborted connection\n");
 			exit(1);
 		}
 		
@@ -810,7 +810,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	
 		/* Check if command has been received correctly */
 		if(removeCRLF(command)){
-			fprintf(stderr, "[SUDP] Command without CR-LF. Aborted \"conexion\" \n");
+			fprintf(stderr, "[SUDP] Command without CR-LF. Aborted \"connection\" \n");
 			exit(1);
 		}
 		
@@ -1021,7 +1021,7 @@ int checkCommand(char *command){
 
 
 /**
- * Adds info of the new conexion to nntpd.log
+ * Adds info of the new connection to nntpd.log
  */
 int addNewConexionToLog(struct sockaddr_in servaddr_in, struct sockaddr_in clientaddr_in, char *protocol){
 	FILE *logFile;

@@ -118,7 +118,7 @@ int clienttcp(char** argv)
 	RESET(command, COMMAND_SIZE);
 	while( fgets(command, sizeof(command), commandsFile) != NULL){	
 		if(removeCRLF(command)){
-			fprintf(stderr, "[TCP] Command without CR-LF. Aborted \"conexion\" \n");
+			fprintf(stderr, "[TCP] Command without CR-LF. Aborted \"connection\" \n");
 			exit(1);
 		}
 
@@ -134,7 +134,7 @@ int clienttcp(char** argv)
 		}
 		
 		if(removeCRLF(command)){
-			fprintf(stderr, "[TCP] Command without CR-LF. Aborted \"conexion\" \n");
+			fprintf(stderr, "[TCP] Command without CR-LF. Aborted \"connection\" \n");
 			exit(1);
 		}
 		
@@ -154,7 +154,7 @@ int clienttcp(char** argv)
 				
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -174,7 +174,7 @@ int clienttcp(char** argv)
 						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -196,7 +196,7 @@ int clienttcp(char** argv)
 				
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -215,7 +215,7 @@ int clienttcp(char** argv)
 						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -236,7 +236,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -256,7 +256,7 @@ int clienttcp(char** argv)
 						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -277,7 +277,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 
@@ -294,7 +294,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -312,7 +312,7 @@ int clienttcp(char** argv)
 						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -333,7 +333,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -351,7 +351,7 @@ int clienttcp(char** argv)
 						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -372,7 +372,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 				
@@ -390,7 +390,7 @@ int clienttcp(char** argv)
 						
 						
 						if(removeCRLF(response)){
-							fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+							fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 							exit(1);
 						}
 						
@@ -423,7 +423,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 
@@ -441,7 +441,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 
@@ -458,7 +458,7 @@ int clienttcp(char** argv)
 
 				//Change CRLF to '\0' to work with response as a string
 				if(removeCRLF(response)){
-					fprintf(stderr, "[TCP] Response without CR-LF. Aborted conexion\n");
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
 					exit(1);
 				}
 
