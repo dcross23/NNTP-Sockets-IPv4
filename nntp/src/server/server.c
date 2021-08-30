@@ -215,6 +215,13 @@ int main(int argc, char **argv)
 							case 0:		/* Child process comes here. */
 								/* Close the listen socket inherited from the daemon. */
 								close(ls_TCP);
+
+								//Registers info of the new UDP "false conexion"
+								if(-1 == addNewConexionToLog(myaddr_in, clientaddr_in, "TCP")){
+									perror("No se ha podido a�adir la conexion a nntpd.log");
+								}	
+
+								//Starts up the server
 								serverTCP(s_TCP, clientaddr_in);
 								exit(0);
 							
@@ -265,7 +272,7 @@ int main(int argc, char **argv)
 						/* Clear and set up address structure for new socket. 
 						* Port 0 is specified to get any of the avaible ones, as well as the IP address.
 						*/						
-						//memset ((char *)&myaddr_in, 0, sizeof(struct sockaddr_in));
+						memset ((char *)&myaddr_in, 0, sizeof(struct sockaddr_in));
 						myaddr_in.sin_family = AF_INET;
 						myaddr_in.sin_addr.s_addr = INADDR_ANY;
 						myaddr_in.sin_port = htons(0);
@@ -284,18 +291,23 @@ int main(int argc, char **argv)
 								
 							case 0:		/* Child process comes here. */
 								/* Child doesnt need the listening socket */
-					    			close(ls_UDP); 
+					    		close(ls_UDP); 
 					    			
-					    			/* Sends a message to the client for him to know the new port for 
-								* the false conexion
-					    			*/
-					    			if (sendto(s_UDP, " ", 1, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) {
+					    		/* Sends a message to the client for him to know the new port for 
+								 * the false conexion
+					    		 */
+					    		if (sendto(s_UDP, " ", 1, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) {
 									perror(argv[0]);
 									fprintf(stderr, "%s: unable to send request to \"connect\" \n", argv[0]);
 									exit(1);
 								}
+
+								//Registers info of the new UDP "false conexion"
+								if(-1 == addNewConexionToLog(myaddr_in, clientaddr_in, "UDP")){
+									perror("No se ha podido a�adir la conexion a nntpd.log");
+								}	
 								
-																	
+								//Starts up the server									
 								serverUDP(s_UDP, clientaddr_in);
 								exit(0);
 							
@@ -417,8 +429,8 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	//printf("[SERV TCP] Startup from %s port %u at %s",
-	//	hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+	printf("[SERV TCP] Startup from %s port %u at %s",
+		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 
 		/* Set the socket for a lingering, graceful close.
 		 * This will cause a final close of this socket to wait until all of the
@@ -984,11 +996,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
  }
  
  
- 
- 
-
- 
- 
+  
 /* Checks what command is */
 int checkCommand(char *command){
 	int i;
@@ -1009,3 +1017,65 @@ int checkCommand(char *command){
 	
 	return WRONG_COMMAND;
 }
+
+
+
+/**
+ * Adds info of the new conexion to nntpd.log
+ */
+int addNewConexionToLog(struct sockaddr_in servaddr_in, struct sockaddr_in clientaddr_in, char *protocol){
+	FILE *logFile;
+	long timevar;
+	time_t t = time(&timevar);
+	struct tm* ltime = localtime(&t);
+	struct addrinfo hints, *res;
+	struct in_addr reqaddr;
+	char hostname[MAXHOST];  
+
+	//int fdescriptor = fileno(logFile);
+	//lockf(fdescriptor, F_LOCK, 0);
+	
+	if(NULL == (logFile = fopen("../noticias/nntpd.log", "a+"))){
+		return -1;
+	}
+	  
+	if(getnameinfo((struct sockaddr *)&clientaddr_in, sizeof(clientaddr_in), hostname, MAXHOST, NULL, 0, 0)){
+		if (inet_ntop(AF_INET, &(clientaddr_in.sin_addr), hostname, MAXHOST) == NULL){
+			perror(" inet_ntop \n");
+		}
+	}		
+	
+	memset (&hints, 0, sizeof (hints));
+	hints.ai_family = AF_INET;
+	if (getaddrinfo (hostname, NULL, &hints, &res) != 0){
+		reqaddr.s_addr = ADDRNOTFOUND;
+	}
+	else {
+		reqaddr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
+		freeaddrinfo(res);
+	}
+	
+
+	fprintf(logFile, "FECHA: %02d-%02d-%04d | ", ltime->tm_mday, ltime->tm_mon+1, ltime->tm_year+1900);
+	fprintf(logFile, "HORA: %02d:%02d:%02d | ", ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
+	fprintf(logFile, "NOMBRE HOST: %s | ", hostname);
+	
+	if (reqaddr.s_addr == ADDRNOTFOUND) 
+		fprintf(logFile, "IP: %s | ", "DESCONOCIDA");
+
+	else {
+		if (inet_ntop(AF_INET, &reqaddr, hostname, MAXHOST) == NULL)
+			perror(" inet_ntop \n");
+		fprintf(logFile, "IP: %s | ", hostname);
+	}
+
+	fprintf(logFile, "PROTOCOLO: %3s | ",protocol);
+	fprintf(logFile, "PUERTO CLIENTE: %u\n", ntohs(clientaddr_in.sin_port));
+	
+	//lockf(fdescriptor, F_ULOCK, 0);
+	fclose(logFile);	
+	return 0;
+}
+
+
+

@@ -25,6 +25,7 @@
 extern int errno;
 
 int checkCommand(char *command);
+int addNewConexionToLog(struct sockaddr_in servaddr_in, struct sockaddr_in clientaddr_in, char *protocol);
 
 void serverTCP(int s, struct sockaddr_in peeraddr_in);
 void serverUDP(int s, struct sockaddr_in clientaddr_in);
