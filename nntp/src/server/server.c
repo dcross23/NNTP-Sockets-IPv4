@@ -673,6 +673,16 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				break;
 			
 			case POST:
+				strcpy(line, "340 Subiendo un articulo; finalice con una linea que solo contenga un punto");
+				if(-1 == addCommandToLog(line, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
+				addCRLF(line, COMMAND_SIZE);
+				if (send(s, line, COMMAND_SIZE, 0) != COMMAND_SIZE) 
+					errout(hostname);
+
+
 				//Receives the info that is going to be posted
 				nLines = 0;
 				while(i = recv(s, line, COMMAND_SIZE, 0)){	
@@ -696,6 +706,10 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 					postInfo[nLines] = malloc(COMMAND_SIZE * sizeof(char));	
 					strcpy(postInfo[nLines], line);
 					nLines++;
+
+					if(-1 == addCommandToLog(line, true)){
+						perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+					}
 
 					if(line[0] == '.')break; 
 				}
@@ -1090,6 +1104,15 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 
 			
 			case POST:
+				strcpy(line, "340 Subiendo un articulo; finalice con una linea que solo contenga un punto");
+				if(-1 == addCommandToLog(line, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
+				addCRLF(line, COMMAND_SIZE);
+				if (sendto(s, line, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
+					errout(hostname);
+
 				//Receives the info that is going to be posted
 				nLines = 0;
 				while(1){	
@@ -1136,7 +1159,7 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 			case QUIT:
 				finish = true;
 				comResp = (CommandResponse) {205, "205 Despedida."};
-				
+
 				if(-1 == addCommandToLog(comResp.message, true)){
 					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
 				}

@@ -402,12 +402,30 @@ int clienttcp(char** argv)
 				break;
 			
 			case POST:
+				//Received response
+				if(-1 == recvTCP(s, response, COMMAND_SIZE)){
+					perror(argv[0]);
+					fprintf(stderr, "[TCP] %s: error reading result\n", argv[0]);
+					exit(1);
+				}
+
+				//Change CRLF to '\0' to work with response as a string
+				if(removeCRLF(response)){
+					fprintf(stderr, "[TCP] Response without CR-LF. Aborted connection\n");
+					exit(1);
+				}
+
+				printf("\033[0;32mS: %s\033[0m", response);
+
 				while( fgets(command, sizeof(command), commandsFile) != NULL){
 					if (send(s, command, COMMAND_SIZE, 0) != COMMAND_SIZE) {
 						fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
 						fprintf(stderr, "on send number %d\n", i);
 						exit(1);
 					}	
+
+					command[strlen(command)-2] = '\0';
+					printf("\n\033[1;36mC: %s\033[0m", command);
 
 					if(command[0] == '.'){
 						break;	
@@ -427,7 +445,7 @@ int clienttcp(char** argv)
 					exit(1);
 				}
 
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				printf("\n\033[0;32mS: %s\033[0m\n", response);
 				
 				break;
 							

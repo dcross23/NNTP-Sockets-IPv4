@@ -34,6 +34,6 @@ see:
 
 
 .PHONY: clean
-clean: stop
+clean: 
 	rm ../bin/*
 	cd client && make clean

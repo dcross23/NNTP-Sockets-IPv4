@@ -977,7 +977,7 @@ CommandResponse post(char **postInfo, int nLines, char *hostname){
 		time(&timevar);
 		timeinfo = localtime(&timevar);
 		newLastGroup = 1;
-		fprintf(groupsFile,"%s %010d %010d %02d%02d%02d %02d%02d%02d Nuevo\r\n",
+		fprintf(groupsFile,"%s %010d %010d %02d%02d%02d %02d%02d%02d Nuevo\n",
 			group, 1, 1, 
 			(timeinfo->tm_year+1900)%100, timeinfo->tm_mon+1, timeinfo->tm_mday,
 			timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
@@ -997,7 +997,7 @@ CommandResponse post(char **postInfo, int nLines, char *hostname){
 		fscanf(nArticlesFile, "%d", &nArticles);
 		fseek(nArticlesFile, 0, SEEK_SET);
 		nArticles++;
-		fprintf(nArticlesFile, "%d\r\n", nArticles);
+		fprintf(nArticlesFile, "%d\n", nArticles);
 	
 	}else{
 		if(NULL == (nArticlesFile = fopen("../noticias/n_articulos", "w"))){
@@ -1007,7 +1007,7 @@ CommandResponse post(char **postInfo, int nLines, char *hostname){
 		}
 
 		nArticles = 1;
-		fprintf(nArticlesFile, "%d\r\n", nArticles);
+		fprintf(nArticlesFile, "%d\n", nArticles);
 	}
 	fclose(nArticlesFile);
 
