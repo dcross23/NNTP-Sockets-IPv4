@@ -484,6 +484,10 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		}
 		
 //--------	/* Command is ok, just works :D */
+		if(-1 == addCommandToLog(command, false)){
+			perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+		}
+
 		switch(checkCommand(command)){
 			case LIST:
 				nGroups = 0;
@@ -494,12 +498,22 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
 				
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				if( RESP_200(comResp.code) ){
 					//Send groups list. Last group is not a group, is ".". This is needed for the client 
 					// to know when the list of groups has finished.
 					for(i=0; i<nGroups; i++){
 						if (send(s, groupsInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
-							errout(hostname);					
+							errout(hostname);			
+
+						removeCRLF(groupsInfo[i]);
+						if(-1 == addCommandToLog(groupsInfo[i], true)){
+							perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+						}		
 					}					
 				}				
 				break;
@@ -514,18 +528,27 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send groups list that had matched. Last group is not a group, is ".". 
 					// This is needed for the client to know when the list of groups has finished.
 					for(i=0; i<nGroups; i++){
 						if (send(s, groupsMatched[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
-							errout(hostname);				
+							errout(hostname);
+
+						removeCRLF(groupsMatched[i]);
+						if(-1 == addCommandToLog(groupsMatched[i], true)){
+							perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+						}				
 					}		
 				}
 
 				break;
 			
-
 
 			case NEWNEWS:
 				nArticles = 0;
@@ -535,24 +558,41 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send articles list that had matched. Last group is not a group, is ".". 
 					// This is needed for the client to know when the list of groups has finished.
-					for(i=0; i<nArticles; i++){
+					for(i=0; i<nArticles; i++){		
 						if (send(s, articlesMatched[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
 							errout(hostname);	
+
+						removeCRLF(articlesMatched[i]);
+						if(-1 == addCommandToLog(articlesMatched[i], true)){
+							perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+						}
 					}		
 				}
 
 				break;
 				
+
 			case GROUP:
 				isGroupSelected = false;
 				comResp = group(command, &isGroupSelected, groupSelected);
 
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
+
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
 				break;
+
 			
 			case ARTICLE:
 				nLines = 0;
@@ -561,11 +601,21 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send info of the article
 					for(i=0; i<nLines; i++){
 						if (send(s, articleInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
-							errout(hostname);	
+							errout(hostname);
+
+						removeCRLF(articleInfo[i]);
+						if(-1 == addCommandToLog(articleInfo[i], true)){
+							perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+						}	
 					}		
 				}
 				break;
@@ -577,11 +627,21 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send head of the article
 					for(i=0; i<nLines; i++){
 						if (send(s, headInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
-							errout(hostname);	
+							errout(hostname);
+
+						removeCRLF(headInfo[i]);
+						if(-1 == addCommandToLog(headInfo[i], true)){
+							perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+						}	
 					}		
 				}
 				break;
@@ -593,11 +653,21 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send head of the article
 					for(i=0; i<nLines; i++){
 						if (send(s, bodyInfo[i], COMMAND_SIZE, 0) != COMMAND_SIZE) 
 							errout(hostname);	
+
+						removeCRLF(bodyInfo[i]);
+						if(-1 == addCommandToLog(bodyInfo[i], true)){
+							perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+						}
 					}		
 				}
 				break;
@@ -635,11 +705,22 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
+
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
 				break;
-							
+
+
 			case QUIT:
 				finish = true;
 				comResp = (CommandResponse) {205, "205 Despedida."};
+				
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				addCRLF(comResp.message, COMMAND_SIZE);
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
@@ -648,6 +729,11 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 				
 			default:
 				comResp = (CommandResponse) {500, "500 Comando desconocido."};
+
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir la respuesta al fichero nntpd.log");
+				}
+
 				addCRLF(comResp.message, COMMAND_SIZE);
 				if (send(s, comResp.message, COMMAND_SIZE, 0) != COMMAND_SIZE) 
 					errout(hostname);
@@ -814,6 +900,9 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 			exit(1);
 		}
 		
+		if(-1 == addCommandToLog(command, false)){
+			perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+		}
 		
 		
 //--------	/* Command is ok, just works :D */
@@ -825,6 +914,11 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				//Send command response with code
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
+
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}				
 				
 				if( RESP_200(comResp.code) ){
 					//Send groups list. Last group is not a group, is ".". This is needed for the client 
@@ -832,6 +926,11 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 					for(i=0; i<nGroups; i++){
 						if (sendto(s, groupsInfo[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 							errout(hostname);
+
+						removeCRLF(groupsInfo[i]);
+						if(-1 == addCommandToLog(groupsInfo[i], true)){
+							perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+						}
 					}					
 			
 				}
@@ -845,12 +944,22 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send groups list that had matched. Last group is not a group, is ".". 
 					// This is needed for the client to know when the list of groups has finished.
 					for(i=0; i<nGroups; i++){
 						if (sendto(s, groupsMatched[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
-							errout(hostname);				
+							errout(hostname);	
+
+						removeCRLF(groupsMatched[i]);
+						if(-1 == addCommandToLog(groupsMatched[i], true)){
+							perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+						}			
 					}		
 				}
 				break;
@@ -863,16 +972,27 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send articles list that had matched. Last group is not a group, is ".". 
 					// This is needed for the client to know when the list of groups has finished.
 					for(i=0; i<nArticles; i++){
 						if (sendto(s, articlesMatched[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 							errout(hostname);	
+
+						removeCRLF(articlesMatched[i]);
+						if(-1 == addCommandToLog(articlesMatched[i], true)){
+							perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+						}
 					}		
 				}
 
 				break;
+
 				
 			case GROUP:
 				isGroupSelected = false;
@@ -880,7 +1000,13 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
+
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
 				break;
+
 			
 			case ARTICLE:
 				nLines = 0;
@@ -889,14 +1015,25 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send info of the article
 					for(i=0; i<nLines; i++){
 						if (sendto(s, articleInfo[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 							errout(hostname);
+
+						removeCRLF(articleInfo[i]);
+						if(-1 == addCommandToLog(articleInfo[i], true)){
+							perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+						}
 					}		
 				}
 				break;
+
 				
 			case HEAD:
 				nLines = 0;
@@ -904,15 +1041,26 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
+				
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
 
 				if(RESP_200(comResp.code)){
 					//Send head of the article
 					for(i=0; i<nLines; i++){
 						if (sendto(s, headInfo[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 							errout(hostname);	
+
+						removeCRLF(headInfo[i]);
+						if(-1 == addCommandToLog(headInfo[i], true)){
+							perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+						}
 					}		
 				}
 				break;
+
 			
 			case BODY:
 				nLines = 0;
@@ -921,14 +1069,25 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
 
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
+
 				if(RESP_200(comResp.code)){
 					//Send head of the article
 					for(i=0; i<nLines; i++){
 						if (sendto(s, bodyInfo[i], COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 							errout(hostname);	
+
+						removeCRLF(bodyInfo[i]);
+						if(-1 == addCommandToLog(bodyInfo[i], true)){
+							perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+						}
 					}		
 				}
 				break;
+
 			
 			case POST:
 				//Receives the info that is going to be posted
@@ -967,19 +1126,34 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
+
+				removeCRLF(comResp.message);
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
 				break;
 							
 			case QUIT:
 				finish = true;
 				comResp = (CommandResponse) {205, "205 Despedida."};
+				
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
+
 				addCRLF(comResp.message, COMMAND_SIZE);
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
+
 				break;
 				
 				
 			default:
 				comResp = (CommandResponse) {500, "500 Comando desconocido."};
+				if(-1 == addCommandToLog(comResp.message, true)){
+					perror("No se ha podido a�adir el comando recibido al fichero nntpd.log");
+				}
+
 				addCRLF(comResp.message, COMMAND_SIZE);
 				if (sendto(s, comResp.message, COMMAND_SIZE, 0, (struct sockaddr *)&clientaddr_in, addrlen) == -1) 
 					errout(hostname);
@@ -1077,5 +1251,32 @@ int addNewConexionToLog(struct sockaddr_in servaddr_in, struct sockaddr_in clien
 	return 0;
 }
 
+
+
+/**
+ * Adds info of the command received to nntpd.log.
+ */
+int addCommandToLog(char *command, bool isResponse){
+	FILE *logFile;
+	long timevar;
+	time_t t = time(&timevar);
+	struct tm* ltime = localtime(&t);
+	
+	if(NULL == (logFile = fopen("../noticias/nntpd.log", "a+"))){
+		return -1;
+	}
+
+	//int fdescriptor = fileno(logFile);
+	//lockf(fdescriptor, F_LOCK, 0);
+
+	fprintf(logFile, "FECHA: %02d-%02d-%04d | ", ltime->tm_mday, ltime->tm_mon+1, ltime->tm_year+1900);
+	if(!isResponse) fprintf(logFile, "COMANDO: (%s)\n", command);
+	else			fprintf(logFile, "RESPUESTA: (%s)\n", command);
+	
+	//lockf(fdescriptor, F_ULOCK, 0);
+
+	fclose(logFile);
+	return 0;
+}
 
 
