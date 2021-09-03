@@ -16,6 +16,9 @@
 
 #include <stdbool.h>
 
+#include "params.h"
+#include "server_commands.h"
+
 #define MAXHOST 	128
 #define RESP_200(code) (code >= 200 && code < 300)
 #define RESP_300(code) (code >= 300 && code < 400)

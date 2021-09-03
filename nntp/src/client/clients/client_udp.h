@@ -14,7 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../../params.h"
+#include "../params.h"
 
 
 #define MAXHOST 512

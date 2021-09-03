@@ -11,7 +11,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../params.h"
+#include "params.h"
 
 //REGEX
 static const char DATE_HOUR_REGEX[] = "^[0-9]{6}$";

@@ -1,7 +1,4 @@
 #include "server.h"
-#include "../params.h"
-#include "server_commands.h"
-
 
 bool END_LOOP = false;          
 void endProgram(){ END_LOOP = true; }

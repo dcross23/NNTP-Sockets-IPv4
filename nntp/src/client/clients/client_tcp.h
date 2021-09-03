@@ -12,7 +12,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../params.h"
+#include "../params.h"
 
 /*
  * Groups the action of recieving a message using TCP connection. This is calling

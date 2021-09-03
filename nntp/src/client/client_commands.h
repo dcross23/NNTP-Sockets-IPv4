@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../params.h"
+#include "params.h"
 
 #define RESET(s, size) (memset(s, '\0', size))
 
