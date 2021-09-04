@@ -900,7 +900,7 @@ CommandResponse post(char **postInfo, int nLines, char *hostname){
 	if(nLines < 5) error = true;
 
 	//Check if first line is "Newsgroup" and if the sintax is correct
-	if(!error && strcmp(strtok(postInfo[0], ":"), "Newsgroups") == 0){
+	if(!error && postInfo[0][0]!='\0' && strcmp(strtok(postInfo[0], ":"), "Newsgroups") == 0){
 		group = strtok(NULL, ":")+1;  //+1 to remove blank space
 		if(regexec(&groupRegex, group, 0, NULL, 0) == REG_NOMATCH) 
 			error = true;
@@ -908,7 +908,7 @@ CommandResponse post(char **postInfo, int nLines, char *hostname){
 		error = true;
 
 	//Check if second line is "Subject" and if the sintax is correct
-	if(!error && strcmp(strtok(postInfo[1], ":"), "Subject") == 0){
+	if(!error && postInfo[1][0]!='\0' && strcmp(strtok(postInfo[1], ":"), "Subject") == 0){
 		subject = strtok(NULL, ":")+1;  //+1 to remove blank space
 	}else
 		error = true;

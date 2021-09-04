@@ -7,21 +7,6 @@ all:
 	cd server && make server
 	cd client && make client
 	
-
-.PHONY: server
-server: all
-	../bin/server
-
-.PHONY: ct
-ct:
-	../bin/client localhost TCP
-
-.PHONY: cu
-cu:
-	../bin/client localhost UDP
-
-
-
 .PHONY: stop	
 stop: 
 	pkill server
@@ -35,5 +20,7 @@ see:
 
 .PHONY: clean
 clean: 
-	rm ../bin/*
+	git restore ../noticias
+	rm ../bin/server ../bin/client
+	rm ../bin/logs/*.txt ../bin/logs/*.log
 	cd client && make clean

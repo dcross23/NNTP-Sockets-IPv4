@@ -52,6 +52,12 @@ int clientudp(char **argv)
 	char tmp[COMMAND_SIZE];
 	FILE *commandsFile;		/* File that contains client NNTP commands to be executed */
 
+	FILE *clientLog;
+	char clientLogName[10];
+	char ordersPath[COMMAND_SIZE];
+
+	bool finishedFalseConex = false;
+
 
 	/* Create the socket. */
 	s = socket (AF_INET, SOCK_DGRAM, 0);
@@ -99,8 +105,8 @@ int clientudp(char **argv)
 	* that this program could easily be ported to a host
 	* that does require it.
 	*/
-    	printf("[UDP] \"False connected\" to %s on port %u at %s", 
-    		argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
+    	//printf("[UDP] \"False connected\" to %s on port %u at %s", 
+    	//	argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
 
 	/* Set up the server address. */
 	servaddr_in.sin_family = AF_INET;
@@ -155,21 +161,27 @@ int clientudp(char **argv)
 		exit(1);
 	}	
 	
+
+	sprintf(clientLogName, "../bin/logs/%u.txt", ntohs(myaddr_in.sin_port)); 
+	if(NULL == (clientLog = fopen(clientLogName, "a+"))){
+		perror("Error al iniciar el fichero .txt del cliente");
+		exit(1);
+	}
+
+	fprintf(clientLog,"[UDP] \"False connected\" to %s on port %u at %s\n",
+			argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
 	
 //---------
-
-	commandsFile = fopen("../src/client/someNNTPCommands.txt", "r");
+	sprintf(ordersPath, "../orders/%s", argv[3]);		
+	commandsFile = fopen(ordersPath, "r");
 	if(commandsFile == NULL){
-		fprintf(stderr, "Cannot read NNTP commands file\n");
+		fprintf(stderr, "[TCP] Cannot read NNTP commands file\n");
 		exit(1);
-	}	
+	}
 	
 	RESET(command, COMMAND_SIZE);
 	while( fgets(command, sizeof(command), commandsFile) != NULL){
-		if(removeCRLF(command)){
-			fprintf(stderr, "[UDP] Command without CR-LF. Aborted \"connection\" \n");
-			exit(1);
-		}
+		command[strlen(command)-2] = '\0';
 
 		if(command[0] == '\0') 
 			continue;
@@ -189,7 +201,8 @@ int clientudp(char **argv)
 		
 		RESET(response, COMMAND_SIZE);
 		
-		printf("\n\033[1;36mC: %s\033[0m\n", command);
+		//printf("\n\033[1;36mC: %s\033[0m\n", command);
+		fprintf(clientLog, "\nC: %s\n", command);
 		
 		switch(checkCommand(command)){
 			case LIST:		
@@ -205,8 +218,9 @@ int clientudp(char **argv)
 				}
 				
 				//Print response
-				printf("\033[0;32mS: %s\033[0m\n", response);
-				
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
+
 				//Check response code
 				if(RESP_200(GET_CODE(response))){
 					while(1){
@@ -225,7 +239,8 @@ int clientudp(char **argv)
 						
 						if(FINISH_RESP(response)) break;
 						
-						printf("S: %s\n", response);
+						//printf("S: %s\n", response);
+						fprintf(clientLog, "S: %s\n", response);
 					}
 				}
 				break;
@@ -244,7 +259,8 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
 
 				//Check response code
 				if(RESP_200(GET_CODE(response))){
@@ -264,7 +280,8 @@ int clientudp(char **argv)
 						
 						if(FINISH_RESP(response)) break;
 						
-						printf("S: %s\n", response);
+						//printf("S: %s\n", response);
+						fprintf(clientLog, "S: %s\n", response);
 					}
 				}
 				break;
@@ -283,10 +300,12 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
 
 				if(RESP_200(GET_CODE(response))){
-					printf("  (Numero - ID - Tema)\n");
+					//printf("  (Numero - ID - Tema)\n");
+					fprintf(clientLog, "  (Numero - ID - Tema)\n");
 
 					while(1){
 						RESET(response, COMMAND_SIZE);
@@ -304,7 +323,8 @@ int clientudp(char **argv)
 						
 						if(FINISH_RESP(response)) break;
 						
-						printf("S: %s\n", response);
+						//printf("S: %s\n", response);
+						fprintf(clientLog, "S: %s\n", response);
 					}
 				}
 				break;
@@ -323,7 +343,8 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
 				break;
 			
 			case ARTICLE:
@@ -340,7 +361,8 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
 
 				if(RESP_200(GET_CODE(response))){
 					while(1){
@@ -360,7 +382,8 @@ int clientudp(char **argv)
 						
 						if(FINISH_RESP(response)) break;
 						
-						printf("S: %s\n", response);
+						//printf("S: %s\n", response);
+						fprintf(clientLog, "S: %s\n", response);
 					}
 				}
 				break;
@@ -379,7 +402,8 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
 
 				if(RESP_200(GET_CODE(response))){
 					while(1){
@@ -399,7 +423,8 @@ int clientudp(char **argv)
 						
 						if(FINISH_RESP(response)) break;
 						
-						printf("S: %s\n", response);
+						//printf("S: %s\n", response);
+						fprintf(clientLog, "S: %s\n", response);
 					}
 				}
 				break;
@@ -418,7 +443,8 @@ int clientudp(char **argv)
 					exit(1);
 				}
 				
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
 
 				if(RESP_200(GET_CODE(response))){
 					while(1){
@@ -438,7 +464,8 @@ int clientudp(char **argv)
 						
 						if(FINISH_RESP(response)) break;
 						
-						printf("S: %s\n", response);
+						//printf("S: %s\n", response);
+						fprintf(clientLog, "S: %s\n", response);
 					}
 				}
 				break;
@@ -455,7 +482,8 @@ int clientudp(char **argv)
 					exit(1);
 				}
 
-				printf("\033[0;32mS: %s\033[0m", response);
+				//printf("\033[0;32mS: %s\033[0m", response);
+				fprintf(clientLog, "S: %s\n", response);
 
 
 				while( fgets(command, sizeof(command), commandsFile) != NULL){
@@ -466,7 +494,8 @@ int clientudp(char **argv)
 					}
 
 					command[strlen(command)-2] = '\0';
-					printf("\n\033[1;36mC: %s\033[0m", command);
+					//printf("\n\033[1;36mC: %s\033[0m", command);
+					fprintf(clientLog, "\nC: %s", command);
 
 					if(command[0] == '.'){
 						break;	
@@ -484,7 +513,8 @@ int clientudp(char **argv)
 					exit(1);
 				}
 
-				printf("\n\033[0;32mS: %s\033[0m\n", response);
+				//printf("\n\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "\nS: %s\n", response);
 				break;
 							
 			case QUIT:
@@ -499,7 +529,10 @@ int clientudp(char **argv)
 					exit(1);
 				}
 
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
+
+				finishedFalseConex = true;
 				break;
 				
 			default:
@@ -514,11 +547,27 @@ int clientudp(char **argv)
 					exit(1);
 				}
 
-				printf("\033[0;32mS: %s\033[0m\n", response);
+				//printf("\033[0;32mS: %s\033[0m\n", response);
+				fprintf(clientLog, "S: %s\n", response);
 			
 		}
 		
 		RESET(command, COMMAND_SIZE);
+
+		if(finishedFalseConex) break;
+	}
+
+	if(!finishedFalseConex){
+		//If client forgets to send out QUIT command, it is sended automatically
+		// to finish the "conexion"
+		strcpy(command, "QUIT");
+		addCRLF(command, COMMAND_SIZE);
+	
+		if (sendto(s, command, COMMAND_SIZE, 0, (struct sockaddr *)&servaddr_in, addrlen) == -1) {
+			fprintf(stderr, "%s: Connection aborted on error ", argv[0]);
+			fprintf(stderr, "on send number %d\n", i);
+			exit(1);
+		}
 	}
 
 	fclose(commandsFile);
@@ -527,7 +576,9 @@ int clientudp(char **argv)
 
  /* Print message indicating completion of task. */
 	time(&timevar);
-	printf("\n[UDP] All done at %s", (char *)ctime(&timevar));
+	//printf("\n[UDP] All done at %s", (char *)ctime(&timevar));
+	fprintf(clientLog, "\n[UDP] All done at %s", (char *)ctime(&timevar));
+	fclose(clientLog);
 }
 
 

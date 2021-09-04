@@ -12,17 +12,15 @@
 int main(int argc, char **argv){
 	
 	
-	//client localhost TCP
-	if (argc != 3) {
-		fprintf(stderr, "Usage:  %s <nameserver> <TCP/UDP>\n", argv[0]);
+	//client localhost TCP ordenes1.txt
+	if (argc != 4) {
+		fprintf(stderr, "Usage:  %s <nameserver> <TCP/UDP> <ordersFile>\n", argv[0]);
 		exit(1);
 	}
-	
-	
+		
 	if( IS_TCP(argv[2]) ){
 		clienttcp(argv);
-		
-			
+					
 	}else if( IS_UDP(argv[2]) ){
 		clientudp(argv);
 	}	

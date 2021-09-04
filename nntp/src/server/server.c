@@ -426,8 +426,8 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("[SERV TCP] Startup from %s port %u at %s",
-		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+	//printf("[SERV TCP] Startup from %s port %u at %s",
+	//	hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 
 		/* Set the socket for a lingering, graceful close.
 		 * This will cause a final close of this socket to wait until all of the
@@ -773,8 +773,8 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("[SERV TCP] Completed %s port %u  at %s",
-		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+	//printf("[SERV TCP] Completed %s port %u  at %s",
+	//	hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 }
 
 
@@ -879,8 +879,8 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	}
 	
 	time (&timevar);
-	printf("[SERV UDP] Startup from %s port %u at %s",
-		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+	//printf("[SERV UDP] Startup from %s port %u at %s",
+	//	hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
 
 	
 	while (1) {
@@ -1185,8 +1185,8 @@ void serverUDP(int s, struct sockaddr_in clientaddr_in)
 	close(s);
 	
 	time (&timevar);
-	printf("[SERV UDP] Completed %s port %u  at %s",
-		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+	//printf("[SERV UDP] Completed %s port %u  at %s",
+	//	hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
  }
  
  
@@ -1229,7 +1229,7 @@ int addNewConexionToLog(struct sockaddr_in servaddr_in, struct sockaddr_in clien
 	//int fdescriptor = fileno(logFile);
 	//lockf(fdescriptor, F_LOCK, 0);
 	
-	if(NULL == (logFile = fopen("../noticias/nntpd.log", "a+"))){
+	if(NULL == (logFile = fopen("../bin/logs/nntpd.log", "a+"))){
 		return -1;
 	}
 	  
@@ -1282,7 +1282,7 @@ int addCommandToLog(char *command, bool isResponse){
 	time_t t = time(&timevar);
 	struct tm* ltime = localtime(&t);
 	
-	if(NULL == (logFile = fopen("../noticias/nntpd.log", "a+"))){
+	if(NULL == (logFile = fopen("../bin/logs/nntpd.log", "a+"))){
 		return -1;
 	}
 
